@@ -138,8 +138,29 @@ struct QuantumCircuit {
         }
     }
 
+    /// The S phase shift gate or PI/4 gate applies a phase shift of PI/4 to the state |1>
+    void s(int qubit_idx) {
+        for (int i = 0; i < this.state.length(); i++) {
+            bool qubit_is_one = (i & (1 << qubit_idx)) != 0;
+            if (qubit_is_one) {
+                this.state[i] = this.state[i] * Complex!real(0, 1);
+            }
+        }
+    }
+
+    /// The T phase shift gate or PI/8 gate applies a phase shift of PI/8 to the state |1>
+    void t(int qubit_idx) {
+        for (int i = 0; i < this.state.length(); i++) {
+            bool qubit_is_one = (i & (1 << qubit_idx)) != 0;
+            if (qubit_is_one) {
+                this.state[i] = this.state[i] * expi(PI / 4);
+            }
+        }
+    }
+
     string measure() {
-        Vector!float probs = Vector!float(cast(int) this.state.length(), new float[this.state.length()]);
+        Vector!float probs = Vector!float(cast(int) this.state.length(), new float[this
+                .state.length()]);
         // Take the magnitude of each complex probability amplitude
         foreach (i, c; this.state.elems) {
             float magnitude = sqrt(pow(c.re, 2) + pow(c.im, 2));
