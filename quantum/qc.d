@@ -123,6 +123,21 @@ struct QuantumCircuit {
         }
     }
 
+    /// The controlled NOT gate checks if the control qubit is |1> if so it flips the target qubit.
+    void cnot(int control_qubit_idx, int target_qubit_idx) {
+        for (int i = 0; i < this.state.length(); i++) {
+            bool control_is_one = (i & (1 << control_qubit_idx)) != 0;
+            if (control_is_one) {
+                int j = i ^ (1 << target_qubit_idx);
+                if (i < j) {
+                    Complex!real temp = this.state[i];
+                    this.state[i] = this.state[j];
+                    this.state[j] = temp;
+                }
+            }
+        }
+    }
+
     string measure() {
         Vector!float probs = Vector!float(cast(int) this.state.length(), new float[this.state.length()]);
         // Take the magnitude of each complex probability amplitude
