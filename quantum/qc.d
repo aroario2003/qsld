@@ -249,7 +249,7 @@ struct QuantumCircuit {
             int tgt_qubit_val = (i >> target_qubit_idx) & 1;
 
             if (cntl_qubit_val == 1 && tgt_qubit_val == 1) {
-                this.state[i] = this.state[i] * expi(2 * PI / pow(2, k));
+                this.state[i] = this.state[i] * expi(2 * PI / pow(2.0, k));
             }
         }
     }
