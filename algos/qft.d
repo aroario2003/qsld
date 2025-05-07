@@ -24,13 +24,26 @@ struct QFT {
     /// and maps them to superpositions with specific phases which affect the amplitudes
     void qft() {
         for (int i = 0; i < this.num_qubits; i++) {
-            for (int j = 0; j < (this.num_qubits - i); j++) {
-                this.qc.cr(j, i, i - j + 1);
+            for (int j = i + 1; j < this.num_qubits; j++) {
+                this.qc.cr(i, j, j - i + 1);
             }
             this.qc.hadamard(i);
         }
 
-        for (int i = 0; i < this.num_qubits; i++) {
+        for (int i = 0; i < this.num_qubits / 2; i++) {
+            this.qc.swap(i, this.num_qubits - (i + 1));
+        }
+    }
+
+    void qft_inverse() {
+        for (int i = this.num_qubits - 1; i >= 0; i--) {
+            for (int j = 0; j < i; j++) {
+                this.qc.cr(j, i, i - j + 1, true);
+            }
+            this.qc.hadamard(i);
+        }
+
+        for (int i = 0; i < this.num_qubits / 2; i++) {
             this.qc.swap(i, this.num_qubits - (i + 1));
         }
     }

@@ -242,14 +242,18 @@ struct QuantumCircuit {
 
     /// The CR_k gate or controlled rotation of order k gate, rotate the phase by e^PI / 2^(k-1)
     /// if and only if the control and target qubits are 1
-    void cr(int control_qubit_idx, int target_qubit_idx, int k) {
+    void cr(int control_qubit_idx, int target_qubit_idx, int k, bool inverse = false) {
         assert(this.num_qubits >= 2, "The number of qubits must be greater than or equal to two in order to use the controlled rotation gate");
         for (int i = 0; i < this.state.length(); i++) {
             int cntl_qubit_val = (i >> control_qubit_idx) & 1;
             int tgt_qubit_val = (i >> target_qubit_idx) & 1;
 
             if (cntl_qubit_val == 1 && tgt_qubit_val == 1) {
-                this.state[i] = this.state[i] * expi(2 * PI / pow(2.0, k));
+                if (!inverse) {
+                    this.state[i] = this.state[i] * expi(2 * PI / pow(2.0, k));
+                } else {
+                    this.state[i] = this.state[i] * expi(-2 * PI / pow(2.0, k));
+                }
             }
         }
     }
