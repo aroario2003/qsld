@@ -3,8 +3,10 @@ module quantum.qc;
 import std.stdio;
 import std.complex;
 import std.math;
-import std.parallelism;
 import std.typecons;
+import std.format;
+import std.algorithm;
+import std.random;
 
 import linalg.matrix;
 import linalg.vector;
@@ -119,5 +121,30 @@ struct QuantumCircuit {
                 this.state[i] = this.state[i] * Complex!real(-1, 0);
             }
         }
+    }
+
+    string measure() {
+        Vector!float probs = Vector!float(cast(int) this.state.length(), new float[this.state.length()]);
+        // Take the magnitude of each complex probability amplitude
+        foreach (i, c; this.state.elems) {
+            float magnitude = sqrt(pow(c.re, 2) + pow(c.im, 2));
+            float prob = pow(magnitude, 2);
+            probs.elems[i] = prob;
+        }
+
+        // Perform inverse transform sampling on probabilities since measurement is non-algorithmic
+        auto rng = Random(unpredictableSeed);
+        auto r = uniform(0.0, 1.0f, rng);
+
+        float sum = 0;
+        string binary_result;
+        foreach (i, elem; probs.elems) {
+            sum += elem;
+            if (r < sum) {
+                binary_result = format("%0*b", this.num_qubits, i);
+                break;
+            }
+        }
+        return binary_result;
     }
 }
