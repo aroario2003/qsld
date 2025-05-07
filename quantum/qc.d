@@ -5,7 +5,6 @@ import std.complex;
 import std.math;
 import std.typecons;
 import std.format;
-import std.algorithm;
 import std.random;
 
 import linalg.matrix;
@@ -24,6 +23,18 @@ struct QuantumCircuit {
         state_arr[] = Complex!real(0, 0);
         // start with a valid classical state by setting one of the amplitudes probabilities to 100%
         state_arr[0] = Complex!real(1, 0);
+        this.state = Vector!(Complex!real)(num_probabilities, state_arr);
+    }
+
+    this(int num_qubits, int starting_state_idx) {
+        this.num_qubits = num_qubits;
+
+        int num_probabilities = pow(2, this.num_qubits);
+        Complex!real[] state_arr = new Complex!real[num_probabilities];
+        //initialize state vector to all 0+0i amplitudes
+        state_arr[] = Complex!real(0, 0);
+        // start with a valid classical state by setting one of the amplitudes probabilities to 100%
+        state_arr[starting_state_idx] = Complex!real(1, 0);
         this.state = Vector!(Complex!real)(num_probabilities, state_arr);
     }
 
@@ -158,6 +169,58 @@ struct QuantumCircuit {
         }
     }
 
+    /// The controlled z gate applies a phase flip to the target qubit if both the 
+    /// control and target are in the state |1>
+    void cz(int control_qubit_idx, int target_qubit_idx) {
+        for (int i = 0; i < this.state.length(); i++) {
+            bool cntl_qubit_is_one = (i & (1 << control_qubit_idx)) != 0;
+            bool tgt_qubit_is_one = (i & (1 << target_qubit_idx)) != 0;
+            if (cntl_qubit_is_one && tgt_qubit_is_one) {
+                this.state[i] = this.state[i] * Complex!real(-1, 0);
+            }
+        }
+    }
+
+    /// The SWAP gate takes two qubits and if their states are different at index i it calculates a
+    /// new position j to swap the amplitudes of two states.
+    void swap(int qubit1, int qubit2) {
+        for (int i = 0; i < this.state.length(); i++) {
+            int qubit1_val = (i >> qubit1) & 1;
+            int qubit2_val = (i >> qubit2) & 1;
+            if (qubit1_val != qubit2_val) {
+                int j = i ^ ((1 << qubit1) | (1 << qubit2));
+                if (i < j) {
+                    Complex!real temp = this.state[i];
+                    this.state[i] = this.state[j];
+                    this.state[j] = temp;
+                }
+            }
+        }
+    }
+
+    /// The ISWAP gate does the same thing as the SWAP gate but also multiplies the amplitudes
+    /// of the states at index i and j by 0+1i
+    void iswap(int qubit1, int qubit2) {
+        for (int i = 0; i < this.state.length(); i++) {
+            int qubit1_val = (i >> qubit1) & 1;
+            int qubit2_val = (i >> qubit2) & 1;
+            if (qubit1_val != qubit2_val) {
+                int j = i ^ ((1 << qubit1) | (1 << qubit2));
+                if (i < j) {
+                    Complex!real temp = this.state[i];
+                    this.state[i] = this.state[j];
+                    this.state[j] = temp;
+
+                    this.state[i] = this.state[i] * Complex!real(0, 1);
+                    this.state[j] = this.state[j] * Complex!real(0, 1);
+
+                }
+            }
+        }
+    }
+
+    /// Collapse the possible superposition of basis states into one classical state 
+    /// based on inverse transform sampling (https://en.wikipedia.org/wiki/Inverse_transform_sampling)
     string measure() {
         Vector!float probs = Vector!float(cast(int) this.state.length(), new float[this
                 .state.length()]);
