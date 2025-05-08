@@ -33,12 +33,12 @@ $ ./build.d -c gdc
 If you would like to compile an example, you must specify an example name to compile:
 
 ```console
-./build.d -e example_name
+$ ./build.d -e example_name
 ```
 you can also do multiple in a row:
 
 ```console
-./build.d -e example_name1 -e example_name2
+$ ./build.d -e example_name1 -e example_name2
 ```
 
 ### Linking
