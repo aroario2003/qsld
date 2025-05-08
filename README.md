@@ -58,3 +58,12 @@ $ <compiler-name> -L-L/path/to/project/libsqld.a -L="-lqsld" -of=<bin-name> <d-f
 
 Linking with any of the examples in `examples/` will be done **automatically** by `build.d`.
 
+### Cleanup
+
+If you would like to cleanup all of the compiled files generated after compilation, you can do:
+
+```console
+$ ./build.d -d
+```
+
+**Note** this will delete `libqsld.a` and any object or binary files related to the examples.
