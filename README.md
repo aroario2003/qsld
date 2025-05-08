@@ -12,15 +12,33 @@ QSLD is a quantum simulation library, mainly for my own benefit in learning more
 
 ### Dependencies For Building
 
-- `dmd`
-- `make`
+- `dmd` or `gdc` or `ldc2`
+- `rdmd`
+- `make` (optional)
 
 ### Building
 
 Before building, clone the project and cd into the root.
 
+If you are using dmd and do not want to compile any examples in the `examples/` directory, You may use the following command:
+
 ```console
-$ make libqsld.a
+$ ./build.d 
+```
+If you are using another compiler (i.e. gdc or ldc2), you must specify the compiler name like so:
+
+```console
+$ ./build.d -c gdc
+```
+If you would like to compile an example, you must specify an example name to compile:
+
+```console
+./build.d -e example_name
+```
+you can also do multiple in a row:
+
+```console
+./build.d -e example_name1 -e example_name2
 ```
 
 ### Linking
@@ -35,5 +53,8 @@ or keep it in the root of the project and use the following:
 
 ```console
 $ <compiler-name> -L-L/path/to/project/libsqld.a -L="-lqsld" -of=<bin-name> <d-filename>.d
+
 ```
+
+Linking with any of the examples in `examples/` will be done **automatically** by `build.d`.
 
