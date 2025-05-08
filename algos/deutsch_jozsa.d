@@ -1,0 +1,98 @@
+module algos.deutsch_jozsa;
+
+import core.stdc.stdlib : rand;
+
+import std.stdio;
+import std.format;
+import std.complex;
+import std.math;
+
+import std.conv : to;
+
+import quantum.qc;
+
+struct DeutschJozsa {
+    int num_qubits;
+    QuantumCircuit qc;
+
+    this(int num_qubits) {
+        this.num_qubits = num_qubits + 1;
+        this.qc = QuantumCircuit(this.num_qubits);
+    }
+
+    /// A constant function f(x) = 0
+    int f_constant_0(string _bit_str) {
+        return 0;
+    }
+    /// A constant function f(x) = 1
+    int f_constant_1(string _bit_str) {
+        return 1;
+    }
+
+    /// A balanced function
+    int f_balanced(string bit_str) {
+        return bit_str[0];
+    }
+
+    /// Implements the oracle gate which affects the quantum state differently based on
+    /// if the function provided is constant and has output 0 or 1, or balanced where their is an 
+    /// equal number of 0's and 1's. When the function is constant such that f(x) = 0 or f(x) = 1, 
+    /// the output will most of the time be all 0 (ideally). If the function is balanced the output
+    /// should be anything but all 0. 
+    private void oracle_gate(int delegate(string) f, string type) {
+        string bit_str = format("%0*b", this.num_qubits - 1, cast(int) rand() % (
+                1 << (this.num_qubits - 1)));
+
+        switch (type) {
+        case "balanced":
+            for (int i = 0; i < bit_str.length; i++) {
+                if (bit_str[i] == '1') {
+                    this.qc.pauli_x(i);
+                }
+            }
+
+            for (int i = 0; i < this.num_qubits - 1; i++) {
+                this.qc.cnot(i, this.num_qubits - 1);
+            }
+
+            for (int i = 0; i < bit_str.length; i++) {
+                if (bit_str[i] == '1') {
+                    this.qc.pauli_x(i);
+                }
+            }
+            break;
+        case "constant":
+            int output = f(bit_str);
+            if (output == 1) {
+                this.qc.pauli_x(this.num_qubits - 1);
+            }
+            break;
+        default:
+            writeln("invalid function type");
+            break;
+        }
+    }
+
+    /// Implements the deutsch-jozsa algorithm for a given fucntion type
+    int[string] deutsch_jozsa(int delegate(string) f, string type) {
+        this.qc.pauli_x(this.num_qubits - 1);
+        this.qc.hadamard(this.num_qubits - 1);
+
+        for (int i = 0; i < this.num_qubits - 1; i++) {
+            this.qc.hadamard(i);
+        }
+
+        oracle_gate(f, type);
+
+        for (int i = 0; i < this.num_qubits - 1; i++) {
+            this.qc.hadamard(i);
+        }
+
+        int[string] counts = new int[string];
+        for (int i = 0; i < 2000; i++) {
+            counts[this.qc.measure()] += 1;
+        }
+
+        return counts;
+    }
+}

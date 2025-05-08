@@ -21,7 +21,8 @@ string[] library_files = [
     "linalg/vector.d",
     "linalg/matrix.d",
     "quantum/qc.d",
-    "algos/qft.d"
+    "algos/qft.d",
+    "algos/deutsch_jozsa.d"
 ];
 
 void compile(string[] compile_cmd, bool library = true, string example_name = "") {
