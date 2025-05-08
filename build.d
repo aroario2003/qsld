@@ -1,16 +1,21 @@
 #!/usr/bin/rdmd
 
-import core.stdc.stdlib : exit;
-
 import std.stdio;
 import std.getopt;
 import std.format;
 import std.file;
 import std.process;
 import std.array;
+import std.algorithm;
+
+import core.stdc.stdlib : exit;
+
+import std.algorithm.searching : canFind;
 
 string compiler = "dmd";
 string[] examples = [];
+bool force = false;
+bool cleanup = false;
 
 string[] library_files = [
     "linalg/vector.d",
@@ -19,27 +24,77 @@ string[] library_files = [
     "algos/qft.d"
 ];
 
+void compile(string[] compile_cmd, bool library = true, string example_name = "") {
+    auto compilation_pid = spawnProcess(compile_cmd);
+    if (wait(compilation_pid) != 0) {
+        if (library) {
+            writeln("Compilation of libqsld.a failed");
+        } else {
+            writeln("Compilation of example with name ", example_name, " failed");
+        }
+        exit(1);
+
+    }
+}
+
+// overload to pass const string[]
+void compile(const string[] compile_cmd, bool library = true, string example_name = "") {
+    auto compilation_pid = spawnProcess(compile_cmd);
+    if (wait(compilation_pid) != 0) {
+        if (library) {
+            writeln("Compilation of libqsld.a failed");
+        } else {
+            writeln("Compilation of example with name ", example_name, " failed");
+        }
+        exit(1);
+    }
+}
+
 void main(string[] args) {
     auto help_info = getopt(args,
         "c|compiler", "specify the compiler to use (default: dmd)", &compiler,
-        "e|example", "specify an example or examples to build", &examples
+        "e|example", "specify an example or examples to build", &examples,
+        "f|force", "force recompile", &force,
+        "d|delete", "cleanup any binary, object and library files in the root of the project or examples/", &cleanup
     );
 
     if (help_info.helpWanted) {
         defaultGetoptPrinter("QSLD build script", help_info.options);
     }
 
+    if (cleanup) {
+        string library_file = "libqsld.a";
+        if (library_file.exists) {
+            remove(format("./%s", library_file));
+        }
+
+        chdir("./examples");
+        foreach (entry; dirEntries(".", SpanMode.shallow)) {
+            if (entry.isDir()) {
+                continue;
+            }
+
+            if (entry.name.endsWith(".o") || entry.name.canFind("_example") && !entry.name.endsWith(
+                    ".d")) {
+                remove(entry.name);
+            }
+        }
+        writeln("cleanup finished!");
+        exit(0);
+    }
+
     const string[] LIBRARY_BUILD_COMMAND = [
         compiler, "-lib", "-O", "-of=libqsld.a"
     ] ~ library_files;
-
     string f = "libqsld.a";
-    if (!f.exists) {
-        auto compilation_pid = spawnProcess(LIBRARY_BUILD_COMMAND);
-        if (wait(compilation_pid) != 0) {
-            writeln("Compilation of libqsld.a failed");
-            exit(1);
-        }
+    if (!force && !f.exists) {
+        compile(LIBRARY_BUILD_COMMAND);
+    } else if (force && f.exists) {
+        compile(LIBRARY_BUILD_COMMAND);
+    } else if (!force && f.exists) {
+        writeln("The library file libqsld.a already exists...skipping, please use -f or --force or remove the existing file to recompile it");
+    } else {
+        compile(LIBRARY_BUILD_COMMAND);
     }
 
     foreach (example; examples) {
@@ -51,20 +106,20 @@ void main(string[] args) {
             "-of=" ~ bin_name_path,
             src_name_path,
         ];
-
         if (!src_name_path.exists) {
             writeln("The example source file with the name ", src_name_path, " does not exist...skipping");
             continue;
         }
 
-        if (!bin_name_path.exists) {
-            auto compilation_pid = spawnProcess(compile_example_cmd);
-            if (wait(compilation_pid) != 0) {
-                writeln("Compilation of example with name ", bin_name_path, " failed");
-                exit(1);
-            }
+        if (!force && !bin_name_path.exists) {
+            compile(compile_example_cmd, false, src_name_path);
+        } else if (force && f.exists) {
+            compile(compile_example_cmd, false, src_name_path);
+        } else if (!force && f.exists) {
+            writeln("The example binary with name ", bin_name_path, " already exists...skipping, use -f or --force or remove the existing file to recompile it");
+            continue;
         } else {
-            writeln("The example binary with name ", bin_name_path, " already exists...skipping");
+            compile(compile_example_cmd, false, src_name_path);
         }
     }
 }
