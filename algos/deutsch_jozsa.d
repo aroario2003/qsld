@@ -88,10 +88,7 @@ struct DeutschJozsa {
             this.qc.hadamard(i);
         }
 
-        int[string] counts = new int[string];
-        for (int i = 0; i < 2000; i++) {
-            counts[this.qc.measure()] += 1;
-        }
+        int[string] counts = qc.measure(2000);
 
         return counts;
     }

@@ -341,15 +341,12 @@ struct QuantumCircuit {
         }
     }
 
-    /**
-    * Collapses the possible superposition of basis states into one classical state 
-    * based on inverse transform sampling (https://en.wikipedia.org/wiki/Inverse_transform_sampling)
-    *
-    * returns: the bitstring of the state which was measured probabilistically
-    */
-    string measure() {
+    // measurement internal logic, this function exists solely to prevent code duplication
+    private string measure_internal() {
         Vector!float probs = Vector!float(cast(int) this.state.length(), new float[this
-                .state.length()]); // Take the magnitude of each complex probability amplitude
+                .state.length()]);
+
+        // Take the magnitude of each complex probability amplitude
         foreach (i, c; this.state.elems) {
             float magnitude = sqrt(pow(c.re, 2) + pow(c.im, 2));
             float prob = pow(magnitude, 2);
@@ -370,5 +367,35 @@ struct QuantumCircuit {
             }
         }
         return binary_result;
+    }
+
+    /**
+    * Collapses the possible superposition of basis states into one classical state 
+    * based on inverse transform sampling (https://en.wikipedia.org/wiki/Inverse_transform_sampling)
+    *
+    * returns: the bitstring of the state which was measured probabilistically
+    */
+    string measure() {
+        string binary_result = measure_internal();
+        return binary_result;
+    }
+
+    /**
+    * Overload of the measure() function with shots parameter, to be able to see
+    * statistical variation in measurement results
+    *
+    * params:
+    * shots = number of times measurement should be preformed
+    *
+    * returns: An associative array of bitstring to amount of times it was measured
+    */
+    int[string] measure(int shots) {
+        assert(shots >= 2, "using this overload of the measure function requires shots to be greater than or equal to 2, it is recommended to use over a 1000");
+        int[string] counts;
+        for (int i = 0; i < shots; i++) {
+            string binary_result = measure_internal();
+            counts[binary_result] += 1;
+        }
+        return counts;
     }
 }
