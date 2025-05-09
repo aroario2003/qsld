@@ -171,7 +171,7 @@ struct Vector(T) {
     */
     void append(T elem) {
         this.elems[this.elems.length++] = elem;
-        this.dimension = this.elems.length;
+        this.dim = cast(int) this.elems.length;
     }
 
     /**
@@ -180,7 +180,7 @@ struct Vector(T) {
     void clear() {
         this.elems = [];
         this.elems.length = 0;
-        this.dimension = 0;
+        this.dim = 0;
     }
 
     // Array operator overloading begin

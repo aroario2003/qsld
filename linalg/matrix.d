@@ -48,7 +48,7 @@ struct Matrix(T) {
     */
     void append(Vector!T row) {
         this.rows[this.rows.length++] = row;
-        this.row_num = this.rows.length;
+        this.row_num = cast(int) this.rows.length;
     }
 
     /**
