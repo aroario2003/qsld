@@ -9,12 +9,25 @@ struct Matrix(T) {
     int row_num;
     int col_num;
 
+    /**
+    * Constructor for the Matrix object
+    *
+    * params:
+    * row_num = the number of rows to be in the matrix
+    * col_num = the number of columns to be in the matrix
+    * rows = The actual rows of the matrix as an array of Vector objects
+    */
     this(int row_num, int col_num, Vector!T[] rows) {
         this.row_num = row_num;
         this.col_num = col_num;
         this.rows = rows;
     }
 
+    /**
+    * Get the columns of the matrix
+    * 
+    * returns: A vector of type T array 
+    */
     Vector!T[] get_cols() {
         Vector!T[] cols = new Vector!T[this.col_num];
         foreach (i; 0 .. col_num) {
@@ -27,10 +40,25 @@ struct Matrix(T) {
         return cols;
     }
 
+    /**
+    * Append a row as a Vector to the matrix
+    *
+    * params: 
+    * row = the row to append to the matrix
+    */
     void append(Vector!T row) {
         this.rows[this.rows.length++] = row;
+        this.row_num = this.rows.length;
     }
 
+    /**
+    * Multiplies a matrix a matrix by a matrix
+    *
+    * params:
+    * mat = The matrix to multiply by
+    *
+    * returns: A new matrix
+    */
     Matrix mult_mat(Matrix mat) {
         assert(this.col_num == mat.row_num, "Cannot multiply due to size incompatibility");
 
@@ -50,6 +78,14 @@ struct Matrix(T) {
         return result_mat;
     }
 
+    /**
+    * Multiplies a matrix by a vector 
+    *
+    * params:
+    * vec = the vector to multiply by
+    *
+    * returns: A new vector
+    */
     Vector!T mult_vec(Vector!T vec) {
         assert(this.col_num == vec.length(),
             "The length of the vector must be equal to length of a row in the matrix");
@@ -63,6 +99,14 @@ struct Matrix(T) {
         return result;
     }
 
+    /**
+    * Multiplies a matrix by a scalar value
+    *
+    * params:
+    * scalar = A scalar value of type T
+    *
+    * returns: A new matrix
+    */
     Matrix mult_scalar(T scalar) {
         Matrix!T result_mat = Matrix!T(this.row_num, this.col_num, []);
         Vector!T result_vec = Vector!T(this.col_num, []);
@@ -78,6 +122,14 @@ struct Matrix(T) {
         return result_mat;
     }
 
+    /**
+    * Kronecker or tensor product two matrices
+    *
+    * params:
+    * target = the matrix to operate with
+    *
+    * returns: A new matrix
+    */
     Matrix kronecker(Matrix target) {
         Matrix!T result_mat;
         Vector!T result;
@@ -106,6 +158,11 @@ struct Matrix(T) {
         return this.mult_vec(rhs);
     }
 
+    /**
+    * Transpose a matrix
+    *
+    * returns: A new matrix
+    */
     Matrix transpose() {
         Matrix!T transpose_mat = Matrix!T(this.col_num, this.row_num, this.get_cols());
         return transpose_mat;

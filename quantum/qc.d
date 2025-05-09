@@ -14,6 +14,12 @@ struct QuantumCircuit {
     int num_qubits;
     Vector!(Complex!real) state;
 
+    /**
+    * constructor for quantum circuit object 
+    * 
+    * params: 
+    * num_qubits = the number of qubits for the circuit to have
+    */
     this(int num_qubits) {
         this.num_qubits = num_qubits;
 
@@ -26,6 +32,14 @@ struct QuantumCircuit {
         this.state = Vector!(Complex!real)(num_probabilities, state_arr);
     }
 
+    /**
+    * Overload of the constructor for the quantum circuit object
+    *
+    * params:
+    * num_qubits = the number of qubits for the circuit to have
+    * starting_state_idx = The index in the state vector of the amplitude to have 100% 
+    * probability when starting out
+    */
     this(int num_qubits, int starting_state_idx) {
         this.num_qubits = num_qubits;
 
@@ -38,9 +52,14 @@ struct QuantumCircuit {
         this.state = Vector!(Complex!real)(num_probabilities, state_arr);
     }
 
-    /// The hadamard quantum gate puts the state into superposition with equal probabilities for each state in 
-    /// superposition if applied to all qubits in the system. Otherwise, Some states will have different probability
-    /// amplitudes then others.
+    /**
+    * The hadamard quantum gate puts the state into superposition with equal probabilities for each state in 
+    * superposition if applied to all qubits in the system. Otherwise, Some states will have different probability
+    * amplitudes then others.
+    * 
+    * params:
+    * qubit_idx = the index of the qubit to affect
+    */
     void hadamard(int qubit_idx) {
         // make sure that the 1/sqrt(2) is scalar multiplied by the hadamard matrix
         Matrix!(Complex!real) hadamard = Matrix!(Complex!real)(2, 2, [
@@ -79,8 +98,14 @@ struct QuantumCircuit {
         }
     }
 
-    /// The controlled hadamard gate applies a hadamard transformation to the target qubit when the 
-    /// control qubit is in the state |1>
+    /**
+    * The controlled hadamard gate applies a hadamard transformation to the target qubit when the 
+    * control qubit is in the state |1>
+    *
+    * params:
+    * control_qubit_idx = the index of the qubit which determines if the other qubit is affected or not
+    * target_qubit_idx = the index of the qubit which is affected by the control 
+    */
     void ch(int control_qubit_idx, int target_qubit_idx) {
         assert(this.num_qubits >= 2, "The number of qubits must be greater than or equal to two in order to use controlled gates");
         for (int i = 0; i < this.state.length(); i++) {
@@ -97,8 +122,13 @@ struct QuantumCircuit {
         }
     }
 
-    /// The pauli-x gate or NOT gate, negates the current state of the qubit so |0> -> |1> and |1> -> |0>.
-    /// More concisely it performs a bit flip. 
+    /**
+    * The pauli-x gate or NOT gate, negates the current state of the qubit so |0> -> |1> and |1> -> |0>.
+    * More concisely it performs a bit flip. 
+    *
+    * params:
+    * qubit_idx = the index of the qubit to be affected
+    */
     void pauli_x(int qubit_idx) {
         Matrix!(Complex!real) pauli_x = Matrix!(Complex!real)(2, 2, [
                 Vector!(Complex!real)(2, [
@@ -129,8 +159,13 @@ struct QuantumCircuit {
         }
     }
 
-    /// The pauli-y gate applies an imaginary relative phase to a state when flipping the state, for |1> -> |0> multiply by i.
-    /// And for |0> -> |1> multiply by -i.
+    /**
+    * The pauli-y gate applies an imaginary relative phase to a state when flipping the state, for |1> -> |0> multiply by i.
+    * And for |0> -> |1> multiply by -i.
+    *
+    * params:
+    * qubit_idx = the index of the qubit to be affected
+    */
     void pauli_y(int qubit_idx) {
         for (int i = 0; i < this.state.length(); i++) {
             int j = i ^ (1 << qubit_idx);
@@ -142,7 +177,12 @@ struct QuantumCircuit {
         }
     }
 
-    /// The pauli-z gate puts a relative phase on the |1> state and leaves |0> untouched
+    /**
+    * The pauli-z gate puts a relative phase on the |1> state and leaves |0> untouched
+    *
+    * params:
+    * qubit_idx = the index of the qubit to be affected
+    */
     void pauli_z(int qubit_idx) {
         for (int i = 0; i < this.state.length(); i++) {
             if ((i & (1 << qubit_idx)) != 0) {
@@ -151,7 +191,13 @@ struct QuantumCircuit {
         }
     }
 
-    /// The controlled NOT gate checks if the control qubit is |1> if so it flips the target qubit.
+    /**
+    * The controlled NOT gate checks if the control qubit is |1> if so it flips the target qubit.
+    * 
+    * params:
+    * control_qubit_idx = the index of the qubit which determines if the target will be affected
+    * target_qubit_idx = the index of the qubit which is affected based on the state of the control 
+    */
     void cnot(int control_qubit_idx, int target_qubit_idx) {
         assert(this.num_qubits >= 2, "The number of qubits must be greater than or equal to two in order to use controlled gates");
         for (int i = 0; i < this.state.length(); i++) {
@@ -167,7 +213,12 @@ struct QuantumCircuit {
         }
     }
 
-    /// The S phase shift gate or PI/4 gate applies a phase shift of PI/4 to the state |1>
+    /**
+    * The S phase shift gate or PI/4 gate applies a phase shift of PI/4 to the state |1>
+    *
+    * params:
+    * qubit_idx = the index of the qubit to be affected
+    */
     void s(int qubit_idx) {
         for (int i = 0; i < this.state.length(); i++) {
             bool qubit_is_one = (i & (1 << qubit_idx)) != 0;
@@ -177,7 +228,12 @@ struct QuantumCircuit {
         }
     }
 
-    /// The T phase shift gate or PI/8 gate applies a phase shift of PI/8 to the state |1>
+    /**
+    * The T phase shift gate or PI/8 gate applies a phase shift of PI/8 to the state |1>
+    *
+    * params:
+    * qubit_idx = the index of the qubit to be affected
+    */
     void t(int qubit_idx) {
         for (int i = 0; i < this.state.length(); i++) {
             bool qubit_is_one = (i & (1 << qubit_idx)) != 0;
@@ -187,8 +243,14 @@ struct QuantumCircuit {
         }
     }
 
-    /// The controlled z gate applies a phase flip to the target qubit if both the 
-    /// control and target are in the state |1>
+    /**
+    * The controlled z gate applies a phase flip to the target qubit if both the 
+    * control and target are in the state |1>
+    *
+    * params:
+    * control_qubit_idx = the index of the qubit which determines if the target is affected
+    * target_qubit_idx = the index of the qubit which is affected
+    */
     void cz(int control_qubit_idx, int target_qubit_idx) {
         assert(this.num_qubits >= 2, "The number of qubits must be greater than or equal to two in order to use controlled gates");
         for (int i = 0; i < this.state.length(); i++) {
@@ -200,8 +262,14 @@ struct QuantumCircuit {
         }
     }
 
-    /// The SWAP gate takes two qubits and if their states are different at index i it calculates a
-    /// new position j to swap the amplitudes of two states.
+    /**
+    * The SWAP gate takes two qubits and if their states are different at index i it calculates a
+    * new position j to swap the amplitudes of two states.
+    *
+    * params:
+    * qubit1 = the first qubit to be swapped by the gate
+    * qubit = the second qubit to be swapped by the gate
+    */
     void swap(int qubit1, int qubit2) {
         assert(this.num_qubits >= 2, "The number of qubits must be greater than or equal to two in order to use the swap gates");
         for (int i = 0; i < this.state.length(); i++) {
@@ -219,8 +287,14 @@ struct QuantumCircuit {
         }
     }
 
-    /// The ISWAP gate does the same thing as the SWAP gate but also multiplies the amplitudes
-    /// of the states at index i and j by 0+1i
+    /**
+    * The ISWAP gate does the same thing as the SWAP gate but also multiplies the amplitudes
+    * of the states at index i and j by 0+1i
+    *
+    * params:
+    * qubit1 = the first qubit to be swapped by the gate
+    * qubit = the second qubit to be swapped by the gate
+    */
     void iswap(int qubit1, int qubit2) {
         assert(this.num_qubits >= 2, "The number of qubits must be greater than or equal to two in order to use the swap gates");
         for (int i = 0; i < this.state.length(); i++) {
@@ -240,8 +314,17 @@ struct QuantumCircuit {
         }
     }
 
-    /// The CR_k gate or controlled rotation of order k gate, rotate the phase by e^PI / 2^(k-1)
-    /// if and only if the control and target qubits are 1
+    /**
+    * The CR_k gate or controlled rotation of order k gate, rotate the phase by e^PI / 2^(k-1)
+    * if and only if the control and target qubits are 1
+    *
+    * params:
+    * control_qubit_idx = the index of the qubit which determines if the target is affected
+    * target_qubit_idx = the index of the qubit which is affected by the control's state
+    * k = the exponent k to apply in the phase factor
+    * inverse = whether or not to invert the gate, this gate is not hermittian so it is not it's
+    *           own inverse
+    */
     void cr(int control_qubit_idx, int target_qubit_idx, int k, bool inverse = false) {
         assert(this.num_qubits >= 2, "The number of qubits must be greater than or equal to two in order to use the controlled rotation gate");
         for (int i = 0; i < this.state.length(); i++) {
@@ -258,8 +341,12 @@ struct QuantumCircuit {
         }
     }
 
-    /// Collapse the possible superposition of basis states into one classical state 
-    /// based on inverse transform sampling (https://en.wikipedia.org/wiki/Inverse_transform_sampling)
+    /**
+    * Collapses the possible superposition of basis states into one classical state 
+    * based on inverse transform sampling (https://en.wikipedia.org/wiki/Inverse_transform_sampling)
+    *
+    * returns: the bitstring of the state which was measured probabilistically
+    */
     string measure() {
         Vector!float probs = Vector!float(cast(int) this.state.length(), new float[this
                 .state.length()]); // Take the magnitude of each complex probability amplitude
