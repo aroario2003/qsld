@@ -1,3 +1,5 @@
+module examples.deutsch_jozsa;
+
 import algos.deutsch_jozsa;
 
 import std.stdio;

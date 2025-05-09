@@ -1,6 +1,8 @@
-import algos.qft;
+module examples.qft;
 
 import std.stdio;
+
+import algos.qft;
 
 void main() {
     // Example 1:
