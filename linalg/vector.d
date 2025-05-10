@@ -2,6 +2,9 @@ module linalg.vector;
 
 import std.stdio;
 import std.math;
+import std.complex;
+
+import linalg.matrix;
 
 struct Vector(T) {
     int dim;
@@ -181,6 +184,35 @@ struct Vector(T) {
         this.elems = [];
         this.elems.length = 0;
         this.dim = 0;
+    }
+
+    /**
+    * Takes the transpose of the vector
+    * 
+    * returns: A matrix of nx1 dimensions where n is the dimensions of the original vector
+    */
+    Matrix!T transpose() {
+        Matrix!T mat = Matrix!T(this.dim, 1, []);
+
+        foreach (elem; this.elems) {
+            mat.append(Vector!T(1, [elem]));
+        }
+
+        return mat;
+    }
+
+    /**
+    * Takes the complex conjugate transpose of the vector
+    *
+    * returns: A matrix of nx1 dimensions with the signs of complex values inverted
+    */
+    Matrix!T dagger()() if (is(T == Complex!real)) {
+
+        foreach (i, elem; this.elems) {
+            this.elems[i] = conj(elem);
+        }
+
+        return this.transpose();
     }
 
     // Array operator overloading begin
