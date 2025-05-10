@@ -46,6 +46,6 @@ void main() {
     writeln("Example 3: The state vector after applying pauli-x to both qubits in a 2 qubit system: ", qc3
             .state.elems);
 
-    // Tip: try increasing the qubits and applying pauli-x to different combinations. 
+    // Tip: Try increasing the qubits and applying pauli-x to different combinations. 
     //      Maybe even apply a hadamard to some of them first. Start below this comment ;). 
 }
