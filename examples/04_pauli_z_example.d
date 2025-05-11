@@ -46,4 +46,7 @@ void main() {
 
     writeln("Example 3: The state vector after applying pauli-z to a two qubit system in the initial state |10>: ", qc3
             .state.elems);
+
+    // Tip: Try appplying the pauli-z gate to both qubits in a 2 qubit system and maybe add some of the other pauli gates.
+    //      Also, add some hadamards and see what happens ;). Start your code below.
 }

@@ -6,7 +6,8 @@ import quantum.qc;
 
 void main() {
     // The S gate or the PI/4 phase shift gate, adds a phase of PI/4 to the complex amplitude
-    // of a basis state if the state of the qubit is |1>, otherwise nothing happens
+    // of a basis state if the state of the qubit is |1>, otherwise nothing happens. Generally,
+    // a phase shift can be thought of as a rotation in radians around a unit circle.
 
     // Example 1:
 
@@ -61,4 +62,7 @@ void main() {
     writeln(
         "Example 4: The state vector after applying the S gate to a two qubit system on the first qubit with an initial state |01>: ", qc4
             .state.elems);
+
+    // Tip: Try applying the S gate to both qubits in a 2 qubit system and try adding some hadamard gates as well.
+    //      Maybe even try throwing in some of the pauli x, y and z gates ;). Start your code below.
 }
