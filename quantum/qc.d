@@ -202,8 +202,10 @@ struct QuantumCircuit {
     */
     void cnot(int control_qubit_idx, int target_qubit_idx) {
         assert(this.num_qubits >= 2, "The number of qubits must be greater than or equal to two in order to use controlled gates");
+
         for (int i = 0; i < this.state.length(); i++) {
             bool control_is_one = (i & (1 << control_qubit_idx)) != 0;
+
             if (control_is_one) {
                 int j = i ^ (1 << target_qubit_idx);
                 if (i < j) {
