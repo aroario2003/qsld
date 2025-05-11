@@ -10,6 +10,8 @@ import std.random;
 import linalg.matrix;
 import linalg.vector;
 
+import quantum.observable;
+
 struct QuantumCircuit {
     int num_qubits;
     Vector!(Complex!real) state;
@@ -320,8 +322,11 @@ struct QuantumCircuit {
     *
     * params:
     * control_qubit_idx = the index of the qubit which determines if the target is affected
+    *
     * target_qubit_idx = the index of the qubit which is affected by the control's state
+    *
     * k = the exponent k to apply in the phase factor
+    *
     * inverse = whether or not to invert the gate, this gate is not hermittian so it is not it's
     *           own inverse
     */
@@ -339,6 +344,26 @@ struct QuantumCircuit {
                 }
             }
         }
+    }
+
+    /**
+    * Computes the expectation value of an observable on the current quantum state of the system
+    * 
+    * params:
+    * observable = The observable affecting the quantum system as a linear combination of weighted 
+    *              pauli operator kronecker products
+    *
+    * returns: A real value, the average measurement value or expectation value
+    */
+    real expectation_value(Observable observable) {
+        Matrix!(Complex!real) psi_dagger = this.state.dagger();
+        Vector!(Complex!real) phi = observable.apply(this.state);
+
+        writeln(psi_dagger);
+        writeln(phi);
+        real result = psi_dagger.inner_product(phi);
+
+        return result;
     }
 
     // measurement internal logic, this function exists solely to prevent code duplication

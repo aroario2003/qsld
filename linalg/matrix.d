@@ -1,6 +1,7 @@
 module linalg.matrix;
 
 import std.stdio;
+import std.complex;
 
 import linalg.vector;
 
@@ -146,6 +147,27 @@ struct Matrix(T) {
             }
         }
         return result_mat;
+    }
+
+    /**
+    * Takes the quantum inner product of a complex conjugated and transposed row vector with a 
+    * complex valued row vector. This is used for expectation value calculaiion.
+    *
+    * params:
+    * target = The vector to multiply by
+    * 
+    * returns: A real number, in the expectation value case, the expectation value
+    */
+    real inner_product(Vector!T target) {
+        assert(this.col_num == 1, "The matrix for the inner product operation must have column dimension of one");
+
+        Complex!real sum = Complex!real(0, 0);
+
+        foreach (i, vec; this.rows) {
+            sum += vec[0] * target[i];
+        }
+
+        return sum.re;
     }
 
     //operator overload for matrix multiplication

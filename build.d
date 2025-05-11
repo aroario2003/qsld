@@ -21,6 +21,7 @@ string[] library_files = [
     "linalg/vector.d",
     "linalg/matrix.d",
     "quantum/qc.d",
+    "quantum/observable.d",
     "algos/qft.d",
     "algos/deutsch_jozsa.d"
 ];
