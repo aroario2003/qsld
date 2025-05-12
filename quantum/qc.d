@@ -39,7 +39,9 @@ struct QuantumCircuit {
     *
     * params:
     * num_qubits = the number of qubits for the circuit to have
+    *
     * starting_state_idx = The index in the state vector of the amplitude to have 100% 
+    *
     * probability when starting out
     */
     this(int num_qubits, int starting_state_idx) {
@@ -106,6 +108,7 @@ struct QuantumCircuit {
     *
     * params:
     * control_qubit_idx = the index of the qubit which determines if the other qubit is affected or not
+    *
     * target_qubit_idx = the index of the qubit which is affected by the control 
     */
     void ch(int control_qubit_idx, int target_qubit_idx) {
@@ -198,6 +201,7 @@ struct QuantumCircuit {
     * 
     * params:
     * control_qubit_idx = the index of the qubit which determines if the target will be affected
+    *
     * target_qubit_idx = the index of the qubit which is affected based on the state of the control 
     */
     void cnot(int control_qubit_idx, int target_qubit_idx) {
@@ -253,6 +257,7 @@ struct QuantumCircuit {
     *
     * params:
     * control_qubit_idx = the index of the qubit which determines if the target is affected
+    *
     * target_qubit_idx = the index of the qubit which is affected
     */
     void cz(int control_qubit_idx, int target_qubit_idx) {
@@ -272,7 +277,8 @@ struct QuantumCircuit {
     *
     * params:
     * qubit1 = the first qubit to be swapped by the gate
-    * qubit = the second qubit to be swapped by the gate
+    *
+    * qubit2 = the second qubit to be swapped by the gate
     */
     void swap(int qubit1, int qubit2) {
         assert(this.num_qubits >= 2, "The number of qubits must be greater than or equal to two in order to use the swap gates");
@@ -297,7 +303,8 @@ struct QuantumCircuit {
     *
     * params:
     * qubit1 = the first qubit to be swapped by the gate
-    * qubit = the second qubit to be swapped by the gate
+    *
+    * qubit2 = the second qubit to be swapped by the gate
     */
     void iswap(int qubit1, int qubit2) {
         assert(this.num_qubits >= 2, "The number of qubits must be greater than or equal to two in order to use the swap gates");
@@ -352,6 +359,55 @@ struct QuantumCircuit {
             }
         }
         this.state = psi;
+    }
+
+    /**
+    * The Ry gate rotates the state vector by an angle theta in radiansaround the y-axis in the bloch sphere. 
+    * The main difference between the Rx gate and this one is that this one does not introduce any imaginary 
+    * values into the amplitudes.
+    *
+    * params:
+    * qubit_idx = the index of the qubit to be affected
+    * 
+    * theta = the angle in radians to rotate the qubit around the y-axis
+    */
+    void ry(int qubit_idx, real theta) {
+        Complex!real c = Complex!real(cos(theta / 2), 0);
+        Complex!real s = Complex!real(sin(theta / 2), 0);
+
+        Vector!(Complex!real) psi = Vector!(Complex!real)(cast(int) this.state.length(), new Complex!real[this
+                .state.length()]);
+
+        // The .init value of psi without this loop will be nan+nani for all elements
+        for (int i = 0; i < psi.length(); i++) {
+            psi[i] = Complex!real(0, 0);
+        }
+
+        for (int i = 0; i < this.state.length(); i++) {
+            int j = i ^ (1 << qubit_idx);
+            if (i < j) {
+                Complex!real a = this.state[i];
+                Complex!real b = this.state[j];
+
+                psi[i] = c * a - s * b;
+                psi[j] = s * a + c * b;
+            }
+        }
+        this.state = psi;
+    }
+
+    void rz(int qubit_idx, real theta) {
+        Complex!real z0 = exp(Complex!real(0, -1) * Complex!real(theta / 2, 0));
+        Complex!real z1 = exp(Complex!real(0, 1) * Complex!real(theta / 2, 0));
+
+        for (int i = 0; i < this.state.length(); i++) {
+            int qubit_value = (i >> qubit_idx) & 1;
+            if (qubit_value == 0) {
+                this.state[i] = this.state[i] * z0;
+            } else if (qubit_value == 1) {
+                this.state[i] = this.state[i] * z1;
+            }
+        }
     }
 
     /**
