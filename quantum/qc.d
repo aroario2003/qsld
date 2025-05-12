@@ -396,6 +396,16 @@ struct QuantumCircuit {
         this.state = psi;
     }
 
+    /**
+    * The Rz gate applies a phase shift to the target qubit based on its state. If the target qubit is 
+    * in the state |0> then it applies a phase shift of e^-i(theta/2). If the qubit is in the state |1>
+    * then it applies a phase shift of e^i(theta/2).
+    *
+    * params:
+    * qubit_idx = the index of the qubit to affect
+    *
+    * theta = the angle in radians to apply to the phase shift exponential
+    */
     void rz(int qubit_idx, real theta) {
         Complex!real z0 = exp(Complex!real(0, -1) * Complex!real(theta / 2, 0));
         Complex!real z1 = exp(Complex!real(0, 1) * Complex!real(theta / 2, 0));
