@@ -319,6 +319,42 @@ struct QuantumCircuit {
     }
 
     /**
+    * The Rx gate rotates the state vector around the x axis of the bloch sphere by some angle
+    * theta in radians. If theta is PI then it rotates the qubit 180 degrees, essentially flipping
+    * it like a pauli-x gate. If theta is PI/2 then it creates an equal superposition over the |0>
+    * and |1> states but with a specific phase shift applied. If theta is 0 then the qubit does not 
+    * change at all.
+    *
+    * params:
+    * qubit_idx = the index of the qubit to be affected by the gate
+    *
+    * theta = the angle to rotate the qubit by in radians
+    */
+    void rx(int qubit_idx, real theta) {
+        Complex!real c = Complex!real(cos(theta / 2), 0);
+        Complex!real s = Complex!real(0, -1) * Complex!real(sin(theta / 2), 0);
+        Vector!(Complex!real) psi = Vector!(Complex!real)(cast(int) this.state.length(), new Complex!real[this
+                .state.length()]);
+
+        // The .init value of psi without this loop will be nan+nani for all elements
+        for (int i = 0; i < psi.length(); i++) {
+            psi[i] = Complex!real(0, 0);
+        }
+
+        for (int i = 0; i < this.state.length(); i++) {
+            int j = i ^ (1 << qubit_idx);
+
+            if (i < j) {
+                Complex!real a = this.state[i];
+                Complex!real b = this.state[j];
+                psi[i] = c * a + s * b;
+                psi[j] = s * a + c * b;
+            }
+        }
+        this.state = psi;
+    }
+
+    /**
     * The CR_k gate or controlled rotation of order k gate, rotate the phase by e^PI / 2^(k-1)
     * if and only if the control and target qubits are 1
     *
