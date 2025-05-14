@@ -23,7 +23,8 @@ string[] library_files = [
     "quantum/qc.d",
     "quantum/observable.d",
     "algos/qft.d",
-    "algos/deutsch_jozsa.d"
+    "algos/deutsch_jozsa.d",
+    "viz/visualization.d"
 ];
 
 void compile(string[] compile_cmd, bool library = true, string example_name = "") {
