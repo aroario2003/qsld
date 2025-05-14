@@ -14,7 +14,10 @@ QSLD is a quantum simulation library, mainly for my own benefit in learning more
 
 - `dmd` or `gdc` or `ldc2`
 - `rdmd`
-- `make` (optional)
+- `pdflatex` (optional*)
+- `quantikz` (optional*)
+
+`pdflatex` and `quantikz` are optional only if you do not want to draw the circuits you create with this library. Otherwise, at least `quantikz` is an absolute necessity, `pdflatex` can be replaced with another latex compiler.
 
 ### Building
 
@@ -67,3 +70,18 @@ $ ./build.d -d
 ```
 
 **Note** this will delete `libqsld.a` and any object or binary files related to the examples.
+
+### Circuit Visualizations
+
+If you would like to be able to visualize the circuits you create with this library. Then you must have some latex compiler installed, it is recommended that if you are going to use this feature to always have the default compiler `pdflatex` installed just in case. Also, you will need a latex package called `quantikz` which must be installed manually onto your system. If you would like to learn how to use this feature in more detail, please refer to the wiki (not available yet).
+
+#### Installing `quantikz`
+
+In order to install quantikz, you must download the file `quantikz.sty` from this [website](https://ctan.org/pkg/quantikz). Once you have downloaded the file and unzipped the archive, you should move it to a global directory where the latex compiler will recognize it, typically this will be `/usr/local/share/texmf/tex/latex/quantikz/`. You should create this directory with root priveleges if it does not exist:
+
+```console
+$ sudo mkdir -p /usr/local/share/texmf/tex/latex/quantikz/
+```
+
+Once this is done you should move **just** the `quantikz.sty` file to that directory with root priveleges.
+
