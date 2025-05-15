@@ -132,6 +132,13 @@ struct QuantumCircuit {
         this.decoherence_conf = decoherence_conf;
     }
 
+    // Updates the visualization internal representation 
+    private void update_visualization_arr(string gate_name, int[] qubit_idxs) {
+        this.visualization_arr[this.visualization_arr.length++] = tuple(gate_name, qubit_idxs, this
+                .timestep);
+        this.timestep += 1;
+    }
+
     // Apply T1, T2 decay or both depending on the specification of 
     // DecoherenceConfig
     private void apply_decoherence(int qubit_idx, int gate_duration) {
@@ -157,10 +164,7 @@ struct QuantumCircuit {
     * qubit_idx = the index of the qubit to affect
     */
     void hadamard(int qubit_idx) {
-        this.visualization_arr[this.visualization_arr.length++] = tuple("H", [
-                qubit_idx
-            ], this.timestep);
-        this.timestep += 1;
+        update_visualization_arr("H", [qubit_idx]);
 
         // make sure that the 1/sqrt(2) is scalar multiplied by the hadamard matrix
         Matrix!(Complex!real) hadamard = Matrix!(Complex!real)(2, 2, [
@@ -215,10 +219,7 @@ struct QuantumCircuit {
     void ch(int control_qubit_idx, int target_qubit_idx) {
         assert(this.num_qubits >= 2, "The number of qubits must be greater than or equal to two in order to use controlled gates");
 
-        this.visualization_arr[this.visualization_arr.length++] = tuple("CH", [
-                control_qubit_idx, target_qubit_idx
-            ], this.timestep);
-        this.timestep += 1;
+        update_visualization_arr("CH", [control_qubit_idx, target_qubit_idx]);
 
         for (int i = 0; i < this.state.length(); i++) {
             bool cntl_qubit_is_one = (i & (1 << control_qubit_idx)) != 0;
@@ -247,10 +248,7 @@ struct QuantumCircuit {
     * qubit_idx = the index of the qubit to be affected
     */
     void pauli_x(int qubit_idx) {
-        this.visualization_arr[this.visualization_arr.length++] = tuple("X", [
-                qubit_idx
-            ], this.timestep);
-        this.timestep += 1;
+        update_visualization_arr("X", [qubit_idx]);
 
         Matrix!(Complex!real) pauli_x = Matrix!(Complex!real)(2, 2, [
                 Vector!(Complex!real)(2, [
@@ -293,10 +291,7 @@ struct QuantumCircuit {
     * qubit_idx = the index of the qubit to be affected
     */
     void pauli_y(int qubit_idx) {
-        this.visualization_arr[this.visualization_arr.length++] = tuple("Y", [
-                qubit_idx
-            ], this.timestep);
-        this.timestep += 1;
+        update_visualization_arr("Y", [qubit_idx]);
 
         for (int i = 0; i < this.state.length(); i++) {
             int j = i ^ (1 << qubit_idx);
@@ -319,10 +314,7 @@ struct QuantumCircuit {
     * qubit_idx = the index of the qubit to be affected
     */
     void pauli_z(int qubit_idx) {
-        this.visualization_arr[this.visualization_arr.length++] = tuple("Z", [
-                qubit_idx
-            ], this.timestep);
-        this.timestep += 1;
+        update_visualization_arr("Z", [qubit_idx]);
 
         for (int i = 0; i < this.state.length(); i++) {
             if ((i & (1 << qubit_idx)) != 0) {
@@ -346,10 +338,7 @@ struct QuantumCircuit {
     void cnot(int control_qubit_idx, int target_qubit_idx) {
         assert(this.num_qubits >= 2, "The number of qubits must be greater than or equal to two in order to use controlled gates");
 
-        this.visualization_arr[this.visualization_arr.length++] = tuple("CX", [
-                control_qubit_idx, target_qubit_idx
-            ], this.timestep);
-        this.timestep += 1;
+        update_visualization_arr("CX", [control_qubit_idx, target_qubit_idx]);
 
         for (int i = 0; i < this.state.length(); i++) {
             bool control_is_one = (i & (1 << control_qubit_idx)) != 0;
@@ -377,10 +366,7 @@ struct QuantumCircuit {
     * qubit_idx = the index of the qubit to be affected
     */
     void s(int qubit_idx) {
-        this.visualization_arr[this.visualization_arr.length++] = tuple("S", [
-                qubit_idx
-            ], this.timestep);
-        this.timestep += 1;
+        update_visualization_arr("S", [qubit_idx]);
 
         for (int i = 0; i < this.state.length(); i++) {
             bool qubit_is_one = (i & (1 << qubit_idx)) != 0;
@@ -401,10 +387,7 @@ struct QuantumCircuit {
     * qubit_idx = the index of the qubit to be affected
     */
     void t(int qubit_idx) {
-        this.visualization_arr[this.visualization_arr.length++] = tuple("T", [
-                qubit_idx
-            ], this.timestep);
-        this.timestep += 1;
+        update_visualization_arr("T", [qubit_idx]);
 
         for (int i = 0; i < this.state.length(); i++) {
             bool qubit_is_one = (i & (1 << qubit_idx)) != 0;
@@ -430,10 +413,7 @@ struct QuantumCircuit {
     void cz(int control_qubit_idx, int target_qubit_idx) {
         assert(this.num_qubits >= 2, "The number of qubits must be greater than or equal to two in order to use controlled gates");
 
-        this.visualization_arr[this.visualization_arr.length++] = tuple("CZ", [
-                control_qubit_idx, target_qubit_idx
-            ], this.timestep);
-        this.timestep += 1;
+        update_visualization_arr("CZ", [control_qubit_idx, target_qubit_idx]);
 
         for (int i = 0; i < this.state.length(); i++) {
             bool cntl_qubit_is_one = (i & (1 << control_qubit_idx)) != 0;
@@ -461,10 +441,7 @@ struct QuantumCircuit {
     void swap(int qubit1, int qubit2) {
         assert(this.num_qubits >= 2, "The number of qubits must be greater than or equal to two in order to use the swap gates");
 
-        this.visualization_arr[this.visualization_arr.length++] = tuple("SWAP", [
-                qubit1, qubit2
-            ], this.timestep);
-        this.timestep += 1;
+        update_visualization_arr("SWAP", [qubit1, qubit2]);
 
         for (int i = 0; i < this.state.length(); i++) {
             int qubit1_val = (i >> qubit1) & 1;
@@ -497,10 +474,7 @@ struct QuantumCircuit {
     void iswap(int qubit1, int qubit2) {
         assert(this.num_qubits >= 2, "The number of qubits must be greater than or equal to two in order to use the swap gates");
 
-        this.visualization_arr[this.visualization_arr.length++] = tuple("iSWAP", [
-                qubit1, qubit2
-            ], this.timestep);
-        this.timestep += 1;
+        update_visualization_arr("iSWAP", [qubit1, qubit2]);
 
         for (int i = 0; i < this.state.length(); i++) {
             int qubit1_val = (i >> qubit1) & 1;
@@ -537,10 +511,7 @@ struct QuantumCircuit {
     * theta = the angle to rotate the qubit by in radians
     */
     void rx(int qubit_idx, real theta) {
-        this.visualization_arr[this.visualization_arr.length++] = tuple("RX", [
-                qubit_idx
-            ], this.timestep);
-        this.timestep += 1;
+        update_visualization_arr("RX", [qubit_idx]);
 
         Complex!real c = Complex!real(cos(theta / 2), 0);
         Complex!real s = Complex!real(0, -1) * Complex!real(sin(theta / 2), 0);
@@ -580,10 +551,7 @@ struct QuantumCircuit {
     * theta = the angle in radians to rotate the qubit around the y-axis
     */
     void ry(int qubit_idx, real theta) {
-        this.visualization_arr[this.visualization_arr.length++] = tuple("RY", [
-                qubit_idx
-            ], this.timestep);
-        this.timestep += 1;
+        update_visualization_arr("RY", [qubit_idx]);
 
         Complex!real c = Complex!real(cos(theta / 2), 0);
         Complex!real s = Complex!real(sin(theta / 2), 0);
@@ -624,10 +592,7 @@ struct QuantumCircuit {
     * theta = the angle in radians to apply to the phase shift exponential
     */
     void rz(int qubit_idx, real theta) {
-        this.visualization_arr[this.visualization_arr.length++] = tuple("RZ", [
-                qubit_idx
-            ], this.timestep);
-        this.timestep += 1;
+        update_visualization_arr("RZ", [qubit_idx]);
 
         Complex!real z0 = exp(Complex!real(0, -1) * Complex!real(theta / 2, 0));
         Complex!real z1 = exp(Complex!real(0, 1) * Complex!real(theta / 2, 0));
@@ -663,10 +628,7 @@ struct QuantumCircuit {
     void cr(int control_qubit_idx, int target_qubit_idx, int k, bool inverse = false) {
         assert(this.num_qubits >= 2, "The number of qubits must be greater than or equal to two in order to use the controlled rotation gate");
 
-        this.visualization_arr[this.visualization_arr.length++] = tuple("CR", [
-                control_qubit_idx, target_qubit_idx
-            ], this.timestep);
-        this.timestep += 1;
+        update_visualization_arr("CR", [control_qubit_idx, target_qubit_idx]);
 
         for (int i = 0; i < this.state.length(); i++) {
             int cntl_qubit_val = (i >> control_qubit_idx) & 1;
