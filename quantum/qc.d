@@ -1,5 +1,6 @@
 module quantum.qc;
 
+// standard library modules
 import std.stdio;
 import std.complex;
 import std.math;
@@ -8,26 +9,34 @@ import std.format;
 import std.random;
 import std.typecons;
 
+// linear algebra modules
 import linalg.matrix;
 import linalg.vector;
 
+// quantum related modules
 import quantum.observable;
+import quantum.decoherence;
 
+// visualization related modules
 import viz.visualization;
 
 struct QuantumCircuit {
+    // These are for the circuit itself
     int num_qubits;
     Vector!(Complex!real) state;
 
-    // these are for circuit visualization
+    // These are for circuit visualization
     int timestep;
     Tuple!(string, int[], int)[] visualization_arr;
+
+    // This is for decoherence with T1/T2 decay
+    DecoherenceConfig decoherence_conf;
 
     /**
     * constructor for quantum circuit object 
     * 
     * params: 
-    * num_qubits = the number of qubits for the circuit to have
+    * num_qubits = The number of qubits for the circuit to have
     */
     this(int num_qubits) {
         this.num_qubits = num_qubits;
@@ -41,17 +50,18 @@ struct QuantumCircuit {
 
         this.state = Vector!(Complex!real)(num_probabilities, state_arr);
         this.timestep = 0;
+
+        this.decoherence_conf = DecoherenceConfig(Nullable!T1Decay.init, Nullable!T2Decay.init, "none");
     }
 
     /**
     * Overload of the constructor for the quantum circuit object
     *
     * params:
-    * num_qubits = the number of qubits for the circuit to have
+    * num_qubits = The number of qubits for the circuit to have
     *
     * starting_state_idx = The index in the state vector of the amplitude to have 100% 
-    *
-    * probability when starting out
+    *                      probability when starting out
     */
     this(int num_qubits, int starting_state_idx) {
         this.num_qubits = num_qubits;
@@ -62,8 +72,80 @@ struct QuantumCircuit {
         state_arr[] = Complex!real(0, 0);
         // start with a valid classical state by setting one of the amplitudes probabilities to 100%
         state_arr[starting_state_idx] = Complex!real(1, 0);
+
         this.state = Vector!(Complex!real)(num_probabilities, state_arr);
         this.timestep = 0;
+
+        this.decoherence_conf = DecoherenceConfig(Nullable!T1Decay.init, Nullable!T2Decay.init, "none");
+    }
+
+    /**
+    * Overload of the constructor for the quantum circuit object
+    *
+    * params:
+    * num_qubits = The number of qubits for the circuit to have
+    *
+    * decoherence_conf = The config for whether you want to use T1 or T2 decay or both
+    *                    and whether you want it be automatic, manual or not happen at all 
+    */
+    this(int num_qubits, DecoherenceConfig decoherence_conf) {
+        this.num_qubits = num_qubits;
+
+        int num_probabilities = pow(2, this.num_qubits);
+        Complex!real[] state_arr = new Complex!real[num_probabilities];
+        //initialize state vector to all 0+0i amplitudes
+        state_arr[] = Complex!real(0, 0);
+        // start with a valid classical state by setting one of the amplitudes probabilities to 100%
+        state_arr[0] = Complex!real(1, 0);
+
+        this.state = Vector!(Complex!real)(num_probabilities, state_arr);
+        this.timestep = 0;
+
+        this.decoherence_conf = decoherence_conf;
+    }
+
+    /**
+    * Overload of the constructor for the quantum circuit object
+    *
+    * params:
+    * num_qubits = The number of qubits for the circuit to have
+    *
+    * starting_state_idx = The index in the state vector of the amplitude to have 100% 
+    *                      probability when starting out
+    *
+    * decoherence_conf = The config for whether you want to use T1 or T2 decay or both
+    *                    and whether you want it be automatic, manual or not happen at all 
+    */
+    this(int num_qubits, int starting_state_idx, DecoherenceConfig decoherence_conf) {
+        this.num_qubits = num_qubits;
+
+        int num_probabilities = pow(2, this.num_qubits);
+        Complex!real[] state_arr = new Complex!real[num_probabilities];
+        //initialize state vector to all 0+0i amplitudes
+        state_arr[] = Complex!real(0, 0);
+        // start with a valid classical state by setting one of the amplitudes probabilities to 100%
+        state_arr[starting_state_idx] = Complex!real(1, 0);
+
+        this.state = Vector!(Complex!real)(num_probabilities, state_arr);
+        this.timestep = 0;
+
+        this.decoherence_conf = decoherence_conf;
+    }
+
+    // Apply T1, T2 decay or both depending on the specification of 
+    // DecoherenceConfig
+    private void apply_decoherence(int qubit_idx, int gate_duration) {
+        if (this.decoherence_conf.decoherence_mode == "automatic") {
+            if (!this.decoherence_conf.t1.isNull()) {
+                T1Decay t1 = this.decoherence_conf.t1.get();
+                this.state = t1.apply(qubit_idx, gate_duration, this.state);
+            }
+
+            if (!this.decoherence_conf.t2.isNull()) {
+                T2Decay t2 = this.decoherence_conf.t2.get();
+                this.state = t2.apply(qubit_idx, gate_duration, this.state);
+            }
+        }
     }
 
     /**
@@ -115,6 +197,10 @@ struct QuantumCircuit {
             this.state[cast(ulong) vec[0]] = updated_amplitudes[0];
             this.state[cast(ulong) vec[1]] = updated_amplitudes[1];
         }
+
+        // This will only happen if DecoherenceConfig.decoherence_mode is
+        // set to automatic
+        apply_decoherence(qubit_idx, 20);
     }
 
     /**
@@ -146,6 +232,11 @@ struct QuantumCircuit {
                 }
             }
         }
+
+        // This will only happen if DecoherenceConfig.decoherence_mode is
+        // set to automatic
+        apply_decoherence(control_qubit_idx, 40);
+        apply_decoherence(target_qubit_idx, 40);
     }
 
     /**
@@ -188,6 +279,10 @@ struct QuantumCircuit {
             this.state[vec[0]] = this.state[vec[1]];
             this.state[vec[1]] = temp;
         }
+
+        // This will only happen if DecoherenceConfig.decoherence_mode is
+        // set to automatic
+        apply_decoherence(qubit_idx, 20);
     }
 
     /**
@@ -211,6 +306,10 @@ struct QuantumCircuit {
                 this.state[j] = temp * Complex!real(0, -1);
             }
         }
+
+        // This will only happen if DecoherenceConfig.decoherence_mode is
+        // set to automatic
+        apply_decoherence(qubit_idx, 20);
     }
 
     /**
@@ -230,6 +329,10 @@ struct QuantumCircuit {
                 this.state[i] = this.state[i] * Complex!real(-1, 0);
             }
         }
+
+        // This will only happen if DecoherenceConfig.decoherence_mode is
+        // set to automatic
+        apply_decoherence(qubit_idx, 0);
     }
 
     /**
@@ -260,6 +363,11 @@ struct QuantumCircuit {
                 }
             }
         }
+
+        // This will only happen if DecoherenceConfig.decoherence_mode is
+        // set to automatic
+        apply_decoherence(control_qubit_idx, 100);
+        apply_decoherence(target_qubit_idx, 100);
     }
 
     /**
@@ -280,6 +388,10 @@ struct QuantumCircuit {
                 this.state[i] = this.state[i] * Complex!real(0, 1);
             }
         }
+
+        // This will only happen if DecoherenceConfig.decoherence_mode is
+        // set to automatic
+        apply_decoherence(qubit_idx, 20);
     }
 
     /**
@@ -300,6 +412,10 @@ struct QuantumCircuit {
                 this.state[i] = this.state[i] * expi(PI / 4);
             }
         }
+
+        // This will only happen if DecoherenceConfig.decoherence_mode is
+        // set to automatic
+        apply_decoherence(qubit_idx, 20);
     }
 
     /**
@@ -326,6 +442,11 @@ struct QuantumCircuit {
                 this.state[i] = this.state[i] * Complex!real(-1, 0);
             }
         }
+
+        // This will only happen if DecoherenceConfig.decoherence_mode is
+        // set to automatic
+        apply_decoherence(control_qubit_idx, 40);
+        apply_decoherence(target_qubit_idx, 40);
     }
 
     /**
@@ -357,6 +478,11 @@ struct QuantumCircuit {
                 }
             }
         }
+
+        // This will only happen if DecoherenceConfig.decoherence_mode is
+        // set to automatic
+        apply_decoherence(qubit1, 50);
+        apply_decoherence(qubit2, 50);
     }
 
     /**
@@ -391,6 +517,11 @@ struct QuantumCircuit {
                 }
             }
         }
+
+        // This will only happen if DecoherenceConfig.decoherence_mode is
+        // set to automatic
+        apply_decoherence(qubit1, 50);
+        apply_decoherence(qubit2, 50);
     }
 
     /**
@@ -432,6 +563,10 @@ struct QuantumCircuit {
             }
         }
         this.state = psi;
+
+        // This will only happen if DecoherenceConfig.decoherence_mode is
+        // set to automatic
+        apply_decoherence(qubit_idx, 30);
     }
 
     /**
@@ -472,6 +607,10 @@ struct QuantumCircuit {
             }
         }
         this.state = psi;
+
+        // This will only happen if DecoherenceConfig.decoherence_mode is
+        // set to automatic
+        apply_decoherence(qubit_idx, 30);
     }
 
     /**
@@ -501,6 +640,10 @@ struct QuantumCircuit {
                 this.state[i] = this.state[i] * z1;
             }
         }
+
+        // This will only happen if DecoherenceConfig.decoherence_mode is
+        // set to automatic
+        apply_decoherence(qubit_idx, 30);
     }
 
     /**
@@ -537,6 +680,11 @@ struct QuantumCircuit {
                 }
             }
         }
+
+        // This will only happen if DecoherenceConfig.decoherence_mode is
+        // set to automatic
+        apply_decoherence(control_qubit_idx, 70);
+        apply_decoherence(target_qubit_idx, 70);
     }
 
     /**

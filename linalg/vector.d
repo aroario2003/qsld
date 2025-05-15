@@ -215,6 +215,19 @@ struct Vector(T) {
         return this.transpose();
     }
 
+    /**
+    * Takes the magnitude of a complex valued vector
+    *
+    * returns: A real number representing the magnitude
+    */
+    real mag()() if (is(T == Complex!real)) {
+        real sum = 0;
+        foreach (elem; this.elems) {
+            sum = sum + pow(abs(elem), 2);
+        }
+        return sqrt(sum);
+    }
+
     // Array operator overloading begin
     T opIndex(size_t i) const {
         return this.elems[i];

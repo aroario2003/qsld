@@ -22,6 +22,7 @@ string[] library_files = [
     "linalg/matrix.d",
     "quantum/qc.d",
     "quantum/observable.d",
+    "quantum/decoherence.d",
     "algos/qft.d",
     "algos/deutsch_jozsa.d",
     "viz/visualization.d"
