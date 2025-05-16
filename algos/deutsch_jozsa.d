@@ -9,7 +9,7 @@ import std.math;
 
 import std.conv : to;
 
-import quantum.qc;
+import quantum.pure_state.qc;
 
 struct DeutschJozsa {
     int num_qubits;

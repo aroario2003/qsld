@@ -1,4 +1,4 @@
-module quantum.qc;
+module quantum.pure_state.qc;
 
 // standard library modules
 import std.stdio;
@@ -14,8 +14,8 @@ import linalg.matrix;
 import linalg.vector;
 
 // quantum related modules
-import quantum.observable;
-import quantum.decoherence;
+import quantum.pure_state.observable;
+import quantum.pure_state.decoherence;
 
 // visualization related modules
 import viz.visualization;

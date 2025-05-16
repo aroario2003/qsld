@@ -3,7 +3,7 @@ module examples.rx;
 import std.stdio;
 import std.math;
 
-import quantum.qc;
+import quantum.pure_state.qc;
 
 void main() {
     // The Rx gate rotates the state vector around the x-axis of the bloch sphere by some angle theta

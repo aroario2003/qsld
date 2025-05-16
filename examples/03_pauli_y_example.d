@@ -2,7 +2,7 @@ module examples.pauli_y;
 
 import std.stdio;
 
-import quantum.qc;
+import quantum.pure_state.qc;
 
 void main() {
     // The pauli-y gate is a lot like pauli-x in that it flips the qubit state from either |1> -> |0> or |0> -> |1>.

@@ -1,4 +1,4 @@
-module quantum.decoherence;
+module quantum.pure_state.decoherence;
 
 import std.complex;
 import std.math;

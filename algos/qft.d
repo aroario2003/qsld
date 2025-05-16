@@ -2,7 +2,7 @@ module algos.qft;
 
 import std.stdio;
 
-import quantum.qc;
+import quantum.pure_state.qc;
 
 struct QFT {
     int num_qubits;

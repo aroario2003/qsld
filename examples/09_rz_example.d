@@ -3,7 +3,7 @@ module examples.rz;
 import std.stdio;
 import std.math;
 
-import quantum.qc;
+import quantum.pure_state.qc;
 
 void main() {
     // The Rz gate rotates the state vector around the z-axis of the bloch sphere and applies only a phase shift to 

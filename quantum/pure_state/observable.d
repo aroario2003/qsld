@@ -1,4 +1,4 @@
-module quantum.observable;
+module quantum.pure_state.observable;
 
 import std.stdio;
 import std.complex;

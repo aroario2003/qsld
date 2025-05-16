@@ -2,7 +2,7 @@ module examples.t;
 
 import std.stdio;
 
-import quantum.qc;
+import quantum.pure_state.qc;
 
 void main() {
     // The T phase shift gate or PI/8 gate, adds a phase of PI/8 to the complex probability amplitude

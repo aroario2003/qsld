@@ -20,9 +20,9 @@ bool cleanup = false;
 string[] library_files = [
     "linalg/vector.d",
     "linalg/matrix.d",
-    "quantum/qc.d",
-    "quantum/observable.d",
-    "quantum/decoherence.d",
+    "quantum/pure_state/qc.d",
+    "quantum/pure_state/observable.d",
+    "quantum/pure_state/decoherence.d",
     "algos/qft.d",
     "algos/deutsch_jozsa.d",
     "viz/visualization.d"
@@ -88,7 +88,7 @@ void main(string[] args) {
     }
 
     const string[] LIBRARY_BUILD_COMMAND = [
-        compiler, "-lib", "-O", "-of=libqsld.a"
+        compiler, "-lib", "-O", "-of=libqsld.a", "-I."
     ] ~ library_files;
     string f = "libqsld.a";
     if (!force && !f.exists) {

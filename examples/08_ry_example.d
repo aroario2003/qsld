@@ -3,7 +3,7 @@ module examples.ry;
 import std.stdio;
 import std.math;
 
-import quantum.qc;
+import quantum.pure_state.qc;
 
 void main() {
     // The Ry gate applies rotates the state vector by an angle theta in radians around the y-axis of the

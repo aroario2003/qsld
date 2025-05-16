@@ -2,7 +2,7 @@ module examples.pauli_z;
 
 import std.stdio;
 
-import quantum.qc;
+import quantum.pure_state.qc;
 
 void main() {
     // The pauli-z gate is somewhat like the pauli-y gate from the previous example, 

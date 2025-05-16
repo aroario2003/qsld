@@ -2,7 +2,7 @@ module examples.s;
 
 import std.stdio;
 
-import quantum.qc;
+import quantum.pure_state.qc;
 
 void main() {
     // The S gate or the PI/4 phase shift gate, adds a phase of PI/4 to the complex amplitude

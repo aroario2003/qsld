@@ -2,7 +2,7 @@ module examples.hadamard;
 
 import std.stdio;
 
-import quantum.qc;
+import quantum.pure_state.qc;
 
 void main() {
     // Example 1:
