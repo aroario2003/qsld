@@ -208,6 +208,20 @@ struct QuantumCircuit {
     }
 
     /**
+    * Overload for the hadamard gate to apply it to multiple qubits
+    *
+    * params:
+    * qubit_idxs = the qubit indices to apply the hadamard gate to
+    */
+    void hadamard(int[] qubit_idxs) {
+        foreach (idx; qubit_idxs) {
+            assert(idx < this.num_qubits,
+                "One or more of the qubit indices is beyond the amount you specified for the system");
+            this.hadamard(idx);
+        }
+    }
+
+    /**
     * The controlled hadamard gate applies a hadamard transformation to the target qubit when the 
     * control qubit is in the state |1>
     *
@@ -238,6 +252,20 @@ struct QuantumCircuit {
         // set to automatic
         apply_decoherence(control_qubit_idx, 40);
         apply_decoherence(target_qubit_idx, 40);
+    }
+
+    /**
+    * Overload for the controlled hadamard gate to apply it to multiple pairs of qubits at once
+    *
+    * params:
+    * qubit_idxs = A tuple array of qubit indices with (int, int) pairs where index 0 is control and index 1 is target
+    */
+    void ch(Tuple!(int, int)[] qubit_idxs) {
+        foreach (idx_tuple; qubit_idxs) {
+            assert(idx_tuple[0] < this.num_qubits && idx_tuple[1] < this.num_qubits,
+                "One or more of the qubit indices is beyond the amount specified for the system");
+            this.ch(idx_tuple[0], idx_tuple[1]);
+        }
     }
 
     /**
@@ -284,6 +312,20 @@ struct QuantumCircuit {
     }
 
     /**
+    * Overload for the pauli_x gate to apply it to multiple qubits at once
+    *
+    * params:
+    * qubit_idxs = Array of qubit indices to apply the pauli-x gate to
+    */
+    void pauli_x(int[] qubit_idxs) {
+        foreach (idx; qubit_idxs) {
+            assert(idx < this.num_qubits,
+                "One or more of the qubit indices is beyond the amount you specified for the system");
+            this.pauli_x(idx);
+        }
+    }
+
+    /**
     * The pauli-y gate applies an imaginary relative phase to a state when flipping the state, for |1> -> |0> multiply by i.
     * And for |0> -> |1> multiply by -i.
     *
@@ -308,6 +350,20 @@ struct QuantumCircuit {
     }
 
     /**
+    * Overload for the pauli_y gate to apply it to multiple qubits at a time
+    *
+    * params:
+    * qubit_idxs = Array of qubit indices to apply the pauli-y gate to
+    */
+    void pauli_y(int[] qubit_idxs) {
+        foreach (idx; qubit_idxs) {
+            assert(idx < this.num_qubits,
+                "One or more of the qubit indices is beyond the amount you specified for the system");
+            this.pauli_y(idx);
+        }
+    }
+
+    /**
     * The pauli-z gate puts a relative phase on the |1> state and leaves |0> untouched
     *
     * params:
@@ -325,6 +381,20 @@ struct QuantumCircuit {
         // This will only happen if DecoherenceConfig.decoherence_mode is
         // set to automatic
         apply_decoherence(qubit_idx, 0);
+    }
+
+    /**
+    * Overload for the pauli_z gate to apply to multiple qubits at once
+    *
+    * params: 
+    * qubit_idxs = An array of qubit indices to apply the pauli-z gate to
+    */
+    void pauli_z(int[] qubit_idxs) {
+        foreach (idx; qubit_idxs) {
+            assert(idx < this.num_qubits,
+                "One or more of the qubit indices is beyond the amount you specified for the system");
+            this.pauli_z(idx);
+        }
     }
 
     /**
@@ -360,6 +430,21 @@ struct QuantumCircuit {
     }
 
     /**
+    * Overload for the cnot gate to apply it multiple qubit pairs at once
+    * 
+    * params:
+    * qubit_idxs = An array of qubit indices as tuples of (int, int) where 
+    *              index 0 is control and index 1 is target
+    */
+    void cnot(Tuple!(int, int)[] qubit_idxs) {
+        foreach (idx_tuple; qubit_idxs) {
+            assert(idx_tuple[0] < this.num_qubits && idx_tuple[1] < this.num_qubits,
+                "One or more of the qubit indices is beyond the amount specified for the system");
+            this.cnot(idx_tuple[0], idx_tuple[1]);
+        }
+    }
+
+    /**
     * The S phase shift gate or PI/4 gate applies a phase shift of PI/4 to the state |1>
     *
     * params:
@@ -381,6 +466,20 @@ struct QuantumCircuit {
     }
 
     /**
+    * Overload of the s gate to apply it to multiple qubits at once
+    *
+    * params:
+    * qubit_idxs = An array of qubit indices to apply the gate to
+    */
+    void s(int[] qubit_idxs) {
+        foreach (idx; qubit_idxs) {
+            assert(idx < this.num_qubits,
+                "One or more of the qubit indices is beyond the amount you specified for the system");
+            this.s(idx);
+        }
+    }
+
+    /**
     * The T phase shift gate or PI/8 gate applies a phase shift of PI/8 to the state |1>
     *
     * params:
@@ -399,6 +498,20 @@ struct QuantumCircuit {
         // This will only happen if DecoherenceConfig.decoherence_mode is
         // set to automatic
         apply_decoherence(qubit_idx, 20);
+    }
+
+    /**
+    * Overload of the t gate to apply it to multiple qubits at once
+    * 
+    * params:
+    * qubit_idxs = An array of qubit indices to apply the gate to
+    */
+    void t(int[] qubit_idxs) {
+        foreach (idx; qubit_idxs) {
+            assert(idx < this.num_qubits,
+                "One or more of the qubit indices is beyond the amount you specified for the system");
+            this.t(idx);
+        }
     }
 
     /**
@@ -427,6 +540,21 @@ struct QuantumCircuit {
         // set to automatic
         apply_decoherence(control_qubit_idx, 40);
         apply_decoherence(target_qubit_idx, 40);
+    }
+
+    /**
+    * Overload of the controlled z gate to apply to multiple qubit pairs at once
+    *
+    * params:
+    * qubit_idxs = An array of tuples of qubit indices with (int, int) pairs where
+    *              index 0 is control and index 1 is target
+    */
+    void cz(Tuple!(int, int)[] qubit_idxs) {
+        foreach (idx_tuple; qubit_idxs) {
+            assert(idx_tuple[0] < this.num_qubits && idx_tuple[1] < this.num_qubits,
+                "One or more of the qubit indices is beyond the amount specified for the system");
+            this.cz(idx_tuple[0], idx_tuple[1]);
+        }
     }
 
     /**
@@ -463,6 +591,20 @@ struct QuantumCircuit {
     }
 
     /**
+    * Overload of the swap gate to apply it to multiple qubit pairs at once
+    *
+    * params:
+    * qubit_idxs = An array of qubit indices as tuples of (int, int) pairs
+    */
+    void swap(Tuple!(int, int)[] qubit_idxs) {
+        foreach (idx_tuple; qubit_idxs) {
+            assert(idx_tuple[0] < this.num_qubits && idx_tuple[1] < this.num_qubits,
+                "One or more of the qubit indices is beyond the amount specified for the system");
+            this.swap(idx_tuple[0], idx_tuple[1]);
+        }
+    }
+
+    /**
     * The ISWAP gate does the same thing as the SWAP gate but also multiplies the amplitudes
     * of the states at index i and j by 0+1i
     *
@@ -496,6 +638,20 @@ struct QuantumCircuit {
         // set to automatic
         apply_decoherence(qubit1, 50);
         apply_decoherence(qubit2, 50);
+    }
+
+    /**
+    * Overload of the iswap gate to apply it to multiple qubit pairs at once
+    *
+    * params:
+    * qubit_idxs = An array of qubit indices as tuples of (int, int) pairs
+    */
+    void iswap(Tuple!(int, int)[] qubit_idxs) {
+        foreach (idx_tuple; qubit_idxs) {
+            assert(idx_tuple[0] < this.num_qubits && idx_tuple[1] < this.num_qubits,
+                "One or more of the qubit indices is beyond the amount specified for the system");
+            this.iswap(idx_tuple[0], idx_tuple[1]);
+        }
     }
 
     /**
@@ -541,6 +697,20 @@ struct QuantumCircuit {
     }
 
     /**
+    * Overload of the Rx gate to apply it to multiple qubits at once with different values of theta
+    *
+    * params:
+    * qubit_idxs = An array of qubit indices and theta values in tuples of (int, real) pairs
+    */
+    void rx(Tuple!(int, real)[] qubit_idxs) {
+        foreach (idx_tuple; qubit_idxs) {
+            assert(idx_tuple[0] < this.num_qubits,
+                "One or more of the qubit indices is beyond the amount you specified for the system");
+            this.rx(idx_tuple[0], idx_tuple[1]);
+        }
+    }
+
+    /**
     * The Ry gate rotates the state vector by an angle theta in radiansaround the y-axis in the bloch sphere. 
     * The main difference between the Rx gate and this one is that this one does not introduce any imaginary 
     * values into the amplitudes.
@@ -582,6 +752,20 @@ struct QuantumCircuit {
     }
 
     /**
+    * Overload of the Ry gate to apply it to multiple qubits at once with different values of theta
+    *
+    * params:
+    * qubit_idxs = An array of qubit indices and theta values in tuples of (int, real) pairs
+    */
+    void ry(Tuple!(int, real)[] qubit_idxs) {
+        foreach (idx_tuple; qubit_idxs) {
+            assert(idx_tuple[0] < this.num_qubits,
+                "One or more of the qubit indices is beyond the amount you specified for the system");
+            this.ry(idx_tuple[0], idx_tuple[1]);
+        }
+    }
+
+    /**
     * The Rz gate applies a phase shift to the target qubit based on its state. If the target qubit is 
     * in the state |0> then it applies a phase shift of e^-i(theta/2). If the qubit is in the state |1>
     * then it applies a phase shift of e^i(theta/2).
@@ -609,6 +793,20 @@ struct QuantumCircuit {
         // This will only happen if DecoherenceConfig.decoherence_mode is
         // set to automatic
         apply_decoherence(qubit_idx, 30);
+    }
+
+    /**
+    * Overload of the Rz gate to apply it to multiple qubits at once with different values of theta
+    *
+    * params:
+    * qubit_idxs = An array of qubit indices and theta values in tuples of (int, real) pairs
+    */
+    void rz(Tuple!(int, real)[] qubit_idxs) {
+        foreach (idx_tuple; qubit_idxs) {
+            assert(idx_tuple[0] < this.num_qubits,
+                "One or more of the qubit indices is beyond the amount you specified for the system");
+            this.rz(idx_tuple[0], idx_tuple[1]);
+        }
     }
 
     /**
