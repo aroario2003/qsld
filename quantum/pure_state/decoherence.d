@@ -1,3 +1,14 @@
+// NOTE: This file contains the code for the pure subsystem of QSLD, this means that
+// the modules within this folder (quantum/pure_state/) work more correctly and efficiently 
+// with pure quantum states. A pure state is one that does not suffer from decoherence 
+// or noise of any sort. You can use decoherence with this module, however, you should 
+// make sure that your quantum state isn't heavily entangled, otherwise, the result of 
+// decoherence will be incorrect to varying degrees depending on the level of entanglement.
+// The reason for this has to do with the code simulating state vector evolution and not
+// density matrix evolution and therefore the state vector does not store and maintian 
+// entanglement information as well as the density matrix. If you would like accurate
+// results with an entangled state, you should use the impure subsystem (quantum/impure_state/).
+
 module quantum.pure_state.decoherence;
 
 import std.complex;

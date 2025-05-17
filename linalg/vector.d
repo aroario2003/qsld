@@ -228,6 +228,33 @@ struct Vector(T) {
         return sqrt(sum);
     }
 
+    /**
+    * Takes the outer product of two vectors. The column vector must be represented as a matrix here
+    * for clarity.
+    *
+    * params:
+    * col_vec = Some column vector as a Matrix!T type
+    *
+    * returns: A matrix
+    */
+    Matrix!T outer_prod(Matrix!T col_vec) {
+        assert(col_vec.col_num == 1, "The input matrix must have one column, to represent a column vector");
+
+        Vector!T row = Vector!T(cast(int) this.elems.length, []);
+        Matrix!T result = Matrix!T(cast(int) this.elems.length, col_vec.row_num, [
+            ]);
+
+        foreach (elem; this.elems) {
+            foreach (col_vec_row; col_vec.rows) {
+                T res = elem * col_vec_row[0];
+                row.append(res);
+            }
+            result.append(row);
+            row.clear();
+        }
+        return result;
+    }
+
     // Array operator overloading begin
     T opIndex(size_t i) const {
         return this.elems[i];

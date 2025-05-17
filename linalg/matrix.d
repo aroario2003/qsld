@@ -64,7 +64,7 @@ struct Matrix(T) {
         assert(this.col_num == mat.row_num, "Cannot multiply due to size incompatibility");
 
         Vector!T[] cols = mat.get_cols();
-        Matrix!T result_mat;
+        Matrix!T result_mat = Matrix!T(this.row_num, mat.col_num, []);
         Vector!T result_row;
 
         foreach (row; this.rows) {
@@ -132,7 +132,8 @@ struct Matrix(T) {
     * returns: A new matrix
     */
     Matrix kronecker(Matrix target) {
-        Matrix!T result_mat;
+        Matrix!T result_mat = Matrix!T(target.row_num * this.row_num, target.col_num * this.col_num, [
+            ]);
         Vector!T result;
 
         foreach (row; this.rows) {
@@ -170,6 +171,45 @@ struct Matrix(T) {
         return sum.re;
     }
 
+    /**
+    * Generates a square identity matrix 
+    * 
+    * params:
+    * dim = The dimensions of the matrix
+    *
+    * reuturns: A square identity matrix
+    */
+    Matrix identity(int dim) {
+        Matrix!T result = Matrix!T(dim, dim, []);
+        Vector!T row = Vector!T(dim, []);
+
+        for (int i = 0; i < dim; i++) {
+            for (int j = 0; j < dim; j++) {
+                if (j == i) {
+                    row.append(cast(T) 1);
+                } else {
+                    row.append(cast(T) 0);
+                }
+            }
+            result.append(row);
+            row.clear();
+        }
+        return result;
+    }
+
+    /**
+    * Take the complex conjugate transpose of a matrix, this only works
+    * if the template T is Complex!real
+    */
+    Matrix dagger()() if (is(T == Complex!real)) {
+        foreach (row; this.rows) {
+            foreach (i, elem; row.elems) {
+                row[i] = conj(elem);
+            }
+        }
+        return this.transpose();
+    }
+
     //operator overload for matrix multiplication
     Matrix opBinary(string s : "*")(Matrix rhs) {
         return this.mult_mat(rhs);
@@ -183,7 +223,8 @@ struct Matrix(T) {
     /**
     * Transpose a matrix
     *
-    * returns: A new matrix
+    * returns: A new matrix with the original rows as columns and original columns
+    *          as rows
     */
     Matrix transpose() {
         Matrix!T transpose_mat = Matrix!T(this.col_num, this.row_num, this.get_cols());
