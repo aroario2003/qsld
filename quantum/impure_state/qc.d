@@ -26,6 +26,7 @@ struct QuantumCircuit {
     int num_qubits;
     Matrix!(Complex!real) density_mat;
     int num_probabilities;
+    int initial_state_idx;
 
     // These are for circuit visualization
     int timestep;
@@ -39,12 +40,13 @@ struct QuantumCircuit {
     */
     this(int num_qubits) {
         this.num_qubits = num_qubits;
+        this.initial_state_idx = 0;
 
         this.num_probabilities = pow(2, this.num_qubits);
         Complex!real[] state_arr = new Complex!real[num_probabilities];
 
         state_arr[] = Complex!real(0, 0);
-        state_arr[0] = Complex!real(1, 0);
+        state_arr[this.initial_state_idx] = Complex!real(1, 0);
 
         Vector!(Complex!real) ket_psi = Vector!(Complex!real)(num_probabilities, state_arr);
         Matrix!(Complex!real) bra_psi = ket_psi.dagger();
@@ -62,12 +64,13 @@ struct QuantumCircuit {
     */
     this(int num_qubits, int starting_state_idx) {
         this.num_qubits = num_qubits;
+        this.initial_state_idx = starting_state_idx;
 
         this.num_probabilities = pow(2, this.num_qubits);
         Complex!real[] state_arr = new Complex!real[num_probabilities];
 
         state_arr[] = Complex!real(0, 0);
-        state_arr[starting_state_idx] = Complex!real(1, 0);
+        state_arr[this.initial_state_idx] = Complex!real(1, 0);
 
         Vector!(Complex!real) ket_psi = Vector!(Complex!real)(num_probabilities, state_arr);
         Matrix!(Complex!real) bra_psi = ket_psi.dagger();
@@ -118,5 +121,90 @@ struct QuantumCircuit {
         }
 
         this.density_mat = result.mult_mat(this.density_mat).mult_mat(result.dagger());
+    }
+
+    /**
+    * The controlled NOT gate checks if the control qubit is |1> if so it flips the target qubit.
+    * 
+    * params:
+    * control_qubit_idx = the index of the qubit which determines if the target will be affected
+    *
+    * target_qubit_idx = the index of the qubit which is affected based on the state of the control 
+    */
+    void cnot(int control_qubit_idx, int target_qubit_idx) {
+        assert(this.num_qubits >= 2, "The number of qubits must be greater than or equal to two in order to use controlled gates");
+
+        update_visualization_arr("CX", [control_qubit_idx, target_qubit_idx]);
+
+        Matrix!(Complex!real) pauli_x = Matrix!(Complex!real)(2, 2, [
+                Vector!(Complex!real)(2, [
+                        Complex!real(0, 0), Complex!real(1, 0)
+                    ]),
+                Vector!(Complex!real)(2, [
+                        Complex!real(1, 0), Complex!real(0, 0)
+                    ])
+            ]);
+
+        Matrix!(Complex!real) projection_0 = Matrix!(Complex!real)(2, 2, [
+                Vector!(Complex!real)(2, [
+                        Complex!real(1, 0), Complex!real(0, 0)
+                    ]),
+                Vector!(Complex!real)(2, [
+                        Complex!real(0, 0), Complex!real(0, 0)
+                    ])
+            ]);
+
+        Matrix!(Complex!real) projection_1 = Matrix!(Complex!real)(2, 2, [
+                Vector!(Complex!real)(2, [
+                        Complex!real(0, 0), Complex!real(0, 0)
+                    ]),
+                Vector!(Complex!real)(2, [
+                        Complex!real(0, 0), Complex!real(1, 0)
+                    ])
+            ]);
+
+        Matrix!(Complex!real) identity = Matrix!(Complex!real)(2, 2, []).identity(2);
+
+        // Make a kronecker product chain for when the control qubit is in 
+        // the |0> state
+        Matrix!(Complex!real)[] kronecker_chain_p0;
+        for (int i = 0; i < this.num_qubits; i++) {
+            if (i == control_qubit_idx) {
+                kronecker_chain_p0[kronecker_chain_p0.length++] = projection_0;
+            } else {
+                kronecker_chain_p0[kronecker_chain_p0.length++] = identity;
+            }
+        }
+
+        // Build a new unitary operator from the kronecker chain for control
+        // in |0> state
+        Matrix!(Complex!real) control_0_op = kronecker_chain_p0[0];
+        for (int i = 1; i < kronecker_chain_p0.length; i++) {
+            control_0_op = control_0_op.kronecker(kronecker_chain_p0[i]);
+        }
+
+        // Make a kronecker product chain for when the control qubit is in the 
+        // |1> state
+        Matrix!(Complex!real)[] kronecker_chain_p1;
+        for (int i = 0; i < this.num_qubits; i++) {
+            if (i == control_qubit_idx) {
+                kronecker_chain_p1[kronecker_chain_p1.length++] = projection_1;
+            } else if (i == target_qubit_idx) {
+                kronecker_chain_p1[kronecker_chain_p1.length++] = pauli_x;
+            } else {
+                kronecker_chain_p1[kronecker_chain_p1.length++] = identity;
+            }
+        }
+
+        // Build a new unitary operator from the kronecker chain for control
+        // in |1> state
+        Matrix!(Complex!real) control_1_op = kronecker_chain_p1[0];
+        for (int i = 1; i < kronecker_chain_p1.length; i++) {
+            control_1_op = control_1_op.kronecker(kronecker_chain_p1[i]);
+        }
+
+        // construct the full cnot gate and apply to the density matrix
+        Matrix!(Complex!real) cnot_op = control_0_op + control_1_op;
+        this.density_mat = cnot_op.mult_mat(this.density_mat).mult_mat(cnot_op.dagger());
     }
 }

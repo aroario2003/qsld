@@ -53,6 +53,32 @@ struct Matrix(T) {
     }
 
     /**
+    * Add two matrices together
+    *
+    * params:
+    * mat = The matrix to add 
+    *
+    * returns: A new matrix
+    */
+    Matrix add_mat(Matrix mat) {
+        Matrix!T result_mat = Matrix!T(this.row_num, this.col_num, []);
+        Vector!T result_row = Vector!T(this.col_num, []);
+        foreach (i, row; this.rows) {
+            foreach (j, elem; row.elems) {
+                result_row.append(elem + mat.rows[i].elems[j]);
+            }
+            result_mat.append(result_row);
+            result_row.clear();
+        }
+        return result_mat;
+    }
+
+    // operator overload for matrix addition
+    Matrix opBinary(string s : "+")(Matrix rhs) {
+        return this.add_mat(rhs);
+    }
+
+    /**
     * Multiplies a matrix a matrix by a matrix
     *
     * params:
@@ -200,6 +226,8 @@ struct Matrix(T) {
     /**
     * Take the complex conjugate transpose of a matrix, this only works
     * if the template T is Complex!real
+    *
+    * returns: A transposed matrix with its complex elements cojugated
     */
     Matrix dagger()() if (is(T == Complex!real)) {
         foreach (row; this.rows) {
@@ -208,6 +236,30 @@ struct Matrix(T) {
             }
         }
         return this.transpose();
+    }
+
+    /**
+    * Get the trace of a square matrix where a result of 1 means the quantum state is pure
+    * and less than 1 means the quantum state is mixed.
+    * 
+    * returns: A real number which is the result of the trace
+    */
+    real trace()() if (is(T == Complex!real)) {
+        assert(this.row_num == this.col_num, "The matrix must be square to take the trace");
+
+        Matrix!T mat_squared = this.mult_mat(this);
+        int diagonal_idx = 0;
+        Complex!real trace_sum = Complex!real(0, 0);
+
+        foreach (row; mat_squared.rows) {
+            foreach (i, elem; row.elems) {
+                if (i == diagonal_idx) {
+                    trace_sum += elem;
+                    diagonal_idx++;
+                }
+            }
+        }
+        return trace_sum.re;
     }
 
     //operator overload for matrix multiplication
