@@ -337,8 +337,9 @@ struct QuantumCircuit {
     }
 
     /**
-    * The pauli-y gate applies an imaginary relative phase to a state when flipping the state, for |1> -> |0> multiply by i.
-    * And for |0> -> |1> multiply by -i.
+    * The pauli-y gate applies an imaginary relative phase to a state when 
+    * flipping the state, for |1> -> |0> multiply by i. And for |0> -> |1> 
+    * multiply by -i.
     *
     * params:
     * qubit_idx = the index of the qubit to be affected
