@@ -84,66 +84,9 @@ struct QuantumCircuit {
         this.timestep += 1;
     }
 
-    /**
-    * The hadamard quantum gate puts the state into superposition with equal probabilities for each state in 
-    * superposition if applied to all qubits in the system. Otherwise, Some states will have different probability
-    * amplitudes then others. (impure subsystem)
-    * 
-    * params:
-    * qubit_idx = the index of the qubit to affect
-    */
-    void hadamard(int qubit_idx) {
-        update_visualization_arr("H", [qubit_idx]);
-
-        Matrix!(Complex!real) hadamard = Matrix!(Complex!real)(2, 2, [
-                Vector!(Complex!real)(2, [
-                        Complex!real(1, 0), Complex!real(1, 0)
-                    ]),
-                Vector!(Complex!real)(2, [
-                        Complex!real(1, 0), Complex!real(-1, 0)
-                    ])
-            ]).mult_scalar(Complex!real(1 / sqrt(2.0), 0));
-
-        Matrix!(Complex!real) identity = Matrix!(Complex!real)(2, 2, []).identity(2);
-        Matrix!(Complex!real)[] kronecker_chain;
-
-        for (int i = 0; i < this.num_qubits; i++) {
-            if (i == qubit_idx) {
-                kronecker_chain[kronecker_chain.length++] = hadamard;
-            } else {
-                kronecker_chain[kronecker_chain.length++] = identity;
-            }
-        }
-
-        Matrix!(Complex!real) result = kronecker_chain[0];
-        for (int i = 1; i < kronecker_chain.length; i++) {
-            result = result.kronecker(kronecker_chain[i]);
-        }
-
-        this.density_mat = result.mult_mat(this.density_mat).mult_mat(result.dagger());
-    }
-
-    /**
-    * The controlled NOT gate checks if the control qubit is |1> if so it flips the target qubit.
-    * 
-    * params:
-    * control_qubit_idx = the index of the qubit which determines if the target will be affected
-    *
-    * target_qubit_idx = the index of the qubit which is affected based on the state of the control 
-    */
-    void cnot(int control_qubit_idx, int target_qubit_idx) {
-        assert(this.num_qubits >= 2, "The number of qubits must be greater than or equal to two in order to use controlled gates");
-
-        update_visualization_arr("CX", [control_qubit_idx, target_qubit_idx]);
-
-        Matrix!(Complex!real) pauli_x = Matrix!(Complex!real)(2, 2, [
-                Vector!(Complex!real)(2, [
-                        Complex!real(0, 0), Complex!real(1, 0)
-                    ]),
-                Vector!(Complex!real)(2, [
-                        Complex!real(1, 0), Complex!real(0, 0)
-                    ])
-            ]);
+    // Builds the full matrix operator for a given controlled gate
+    private Matrix!(Complex!real) build_full_controlled_gate(Matrix!(
+            Complex!real) gate_matrix, int control_qubit_idx, int target_qubit_idx) {
 
         Matrix!(Complex!real) projection_0 = Matrix!(Complex!real)(2, 2, [
                 Vector!(Complex!real)(2, [
@@ -168,7 +111,7 @@ struct QuantumCircuit {
         // Make a kronecker product chain for when the control qubit is in 
         // the |0> state
         Matrix!(Complex!real)[] kronecker_chain_p0;
-        for (int i = 0; i < this.num_qubits; i++) {
+        for (int i = this.num_qubits - 1; i >= 0; i--) {
             if (i == control_qubit_idx) {
                 kronecker_chain_p0[kronecker_chain_p0.length++] = projection_0;
             } else {
@@ -186,11 +129,11 @@ struct QuantumCircuit {
         // Make a kronecker product chain for when the control qubit is in the 
         // |1> state
         Matrix!(Complex!real)[] kronecker_chain_p1;
-        for (int i = 0; i < this.num_qubits; i++) {
+        for (int i = this.num_qubits - 1; i >= 0; i--) {
             if (i == control_qubit_idx) {
                 kronecker_chain_p1[kronecker_chain_p1.length++] = projection_1;
             } else if (i == target_qubit_idx) {
-                kronecker_chain_p1[kronecker_chain_p1.length++] = pauli_x;
+                kronecker_chain_p1[kronecker_chain_p1.length++] = gate_matrix;
             } else {
                 kronecker_chain_p1[kronecker_chain_p1.length++] = identity;
             }
@@ -203,8 +146,98 @@ struct QuantumCircuit {
             control_1_op = control_1_op.kronecker(kronecker_chain_p1[i]);
         }
 
-        // construct the full cnot gate and apply to the density matrix
-        Matrix!(Complex!real) cnot_op = control_0_op + control_1_op;
+        return control_0_op + control_1_op;
+    }
+
+    /**
+    * The hadamard quantum gate puts the state into superposition with equal probabilities for each state in 
+    * superposition if applied to all qubits in the system. Otherwise, Some states will have different probability
+    * amplitudes then others. (impure subsystem)
+    * 
+    * params:
+    * qubit_idx = the index of the qubit to affect
+    */
+    void hadamard(int qubit_idx) {
+        update_visualization_arr("H", [qubit_idx]);
+
+        Matrix!(Complex!real) hadamard = Matrix!(Complex!real)(2, 2, [
+                Vector!(Complex!real)(2, [
+                        Complex!real(1, 0), Complex!real(1, 0)
+                    ]),
+                Vector!(Complex!real)(2, [
+                        Complex!real(1, 0), Complex!real(-1, 0)
+                    ])
+            ]).mult_scalar(Complex!real(1 / sqrt(2.0), 0));
+
+        Matrix!(Complex!real) identity = Matrix!(Complex!real)(2, 2, []).identity(2);
+        Matrix!(Complex!real)[] kronecker_chain;
+
+        for (int i = this.num_qubits - 1; i >= 0; i--) {
+            if (i == qubit_idx) {
+                kronecker_chain[kronecker_chain.length++] = hadamard;
+            } else {
+                kronecker_chain[kronecker_chain.length++] = identity;
+            }
+        }
+
+        Matrix!(Complex!real) result = kronecker_chain[0];
+        for (int i = 1; i < kronecker_chain.length; i++) {
+            result = result.kronecker(kronecker_chain[i]);
+        }
+
+        this.density_mat = result.mult_mat(this.density_mat).mult_mat(result.dagger());
+    }
+
+    /**
+    * The controlled hadamard gate applies a hadamard transformation to the target qubit when the 
+    * control qubit is in the state |1>
+    *
+    * params:
+    * control_qubit_idx = the index of the qubit which determines if the other qubit is affected or not
+    *
+    * target_qubit_idx = the index of the qubit which is affected by the control 
+    */
+    void ch(int control_qubit_idx, int target_qubit_idx) {
+        assert(this.num_qubits >= 2, "The number of qubits must be greater than or equal to two in order to use controlled gates");
+
+        update_visualization_arr("CH", [control_qubit_idx, target_qubit_idx]);
+
+        Matrix!(Complex!real) hadamard = Matrix!(Complex!real)(2, 2, [
+                Vector!(Complex!real)(2, [
+                        Complex!real(1, 0), Complex!real(1, 0)
+                    ]),
+                Vector!(Complex!real)(2, [
+                        Complex!real(1, 0), Complex!real(-1, 0)
+                    ])
+            ]).mult_scalar(Complex!real(1 / sqrt(2.0), 0));
+
+        Matrix!(Complex!real) ch_op = build_full_controlled_gate(hadamard, control_qubit_idx, target_qubit_idx);
+        this.density_mat = ch_op.mult_mat(this.density_mat).mult_mat(ch_op.dagger());
+    }
+
+    /**
+    * The controlled NOT gate checks if the control qubit is |1> if so it flips the target qubit.
+    * 
+    * params:
+    * control_qubit_idx = the index of the qubit which determines if the target will be affected
+    *
+    * target_qubit_idx = the index of the qubit which is affected based on the state of the control 
+    */
+    void cnot(int control_qubit_idx, int target_qubit_idx) {
+        assert(this.num_qubits >= 2, "The number of qubits must be greater than or equal to two in order to use controlled gates");
+
+        update_visualization_arr("CX", [control_qubit_idx, target_qubit_idx]);
+
+        Matrix!(Complex!real) pauli_x = Matrix!(Complex!real)(2, 2, [
+                Vector!(Complex!real)(2, [
+                        Complex!real(0, 0), Complex!real(1, 0)
+                    ]),
+                Vector!(Complex!real)(2, [
+                        Complex!real(1, 0), Complex!real(0, 0)
+                    ])
+            ]);
+
+        Matrix!(Complex!real) cnot_op = build_full_controlled_gate(pauli_x, control_qubit_idx, target_qubit_idx);
         this.density_mat = cnot_op.mult_mat(this.density_mat).mult_mat(cnot_op.dagger());
     }
 }
