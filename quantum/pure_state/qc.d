@@ -617,7 +617,7 @@ struct QuantumCircuit {
     }
 
     /**
-    * The ISWAP gate does the same thing as the SWAP gate but also multiplies the amplitudes
+    * The iSWAP gate does the same thing as the SWAP gate but also multiplies the amplitudes
     * of the states at index i and j by 0+1i
     *
     * params:
@@ -822,7 +822,7 @@ struct QuantumCircuit {
     }
 
     /**
-    * The CR_k gate or controlled rotation of order k gate, rotate the phase by e^PI / 2^(k-1)
+    * The CR_k gate or controlled rotation of order k gate, rotate the phase by e^2 * PI / 2^k
     * if and only if the control and target qubits are 1
     *
     * params:
@@ -872,8 +872,6 @@ struct QuantumCircuit {
         Matrix!(Complex!real) psi_dagger = this.state.dagger();
         Vector!(Complex!real) phi = observable.apply(this.state);
 
-        writeln(psi_dagger);
-        writeln(phi);
         real result = psi_dagger.inner_product(phi);
 
         return result;

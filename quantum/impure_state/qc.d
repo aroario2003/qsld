@@ -381,4 +381,387 @@ struct QuantumCircuit {
         Matrix!(Complex!real) cnot_op = build_full_controlled_gate(pauli_x, control_qubit_idx, target_qubit_idx);
         this.density_mat = cnot_op.mult_mat(this.density_mat).mult_mat(cnot_op.dagger());
     }
+
+    /**
+    * The S phase shift gate or PI/4 gate applies a phase shift of PI/4 to the state |1>
+    *
+    * params:
+    * qubit_idx = the index of the qubit to be affected
+    */
+    void s(int qubit_idx) {
+        update_visualization_arr("S", [qubit_idx]);
+
+        Matrix!(Complex!real) s = Matrix!(Complex!real)(2, 2, [
+                Vector!(Complex!real)(2, [
+                        Complex!real(1, 0), Complex!real(0, 0)
+                    ]),
+                Vector!(Complex!real)(2, [
+                        Complex!real(0, 0), Complex!real(0, 1)
+                    ])
+            ]);
+
+        Matrix!(Complex!real) s_op = build_full_gate(s, qubit_idx);
+        this.density_mat = s_op.mult_mat(this.density_mat).mult_mat(s_op.dagger());
+    }
+
+    /**
+    * Overload of the s gate to apply it to multiple qubits at once
+    *
+    * params:
+    * qubit_idxs = An array of qubit indices to apply the gate to
+    */
+    void s(int[] qubit_idxs) {
+        foreach (idx; qubit_idxs) {
+            assert(idx < this.num_qubits,
+                "One or more of the qubit indices is beyond the amount you specified for the system");
+            this.s(idx);
+        }
+    }
+
+    /**
+    * The T phase shift gate or PI/8 gate applies a phase shift of PI/8 to the state |1>
+    *
+    * params:
+    * qubit_idx = the index of the qubit to be affected
+    */
+    void t(int qubit_idx) {
+        update_visualization_arr("T", [qubit_idx]);
+
+        Matrix!(Complex!real) t = Matrix!(Complex!real)(2, 2, [
+                Vector!(Complex!real)(2, [
+                        Complex!real(1, 0), Complex!real(0, 0)
+                    ]),
+                Vector!(Complex!real)(2, [
+                        Complex!real(0, 0), expi(PI / 4)
+                    ])
+            ]);
+
+        Matrix!(Complex!real) t_op = build_full_gate(t, qubit_idx);
+        this.density_mat = t_op.mult_mat(this.density_mat).mult_mat(t_op.dagger());
+    }
+
+    /**
+    * Overload of the t gate to apply it to multiple qubits at once
+    * 
+    * params:
+    * qubit_idxs = An array of qubit indices to apply the gate to
+    */
+    void t(int[] qubit_idxs) {
+        foreach (idx; qubit_idxs) {
+            assert(idx < this.num_qubits,
+                "One or more of the qubit indices is beyond the amount you specified for the system");
+            this.t(idx);
+        }
+    }
+
+    /**
+    * The controlled z gate applies a phase flip to the target qubit if both the 
+    * control and target are in the state |1>
+    *
+    * params:
+    * control_qubit_idx = the index of the qubit which determines if the target is affected
+    *
+    * target_qubit_idx = the index of the qubit which is affected
+    */
+    void cz(int control_qubit_idx, int target_qubit_idx) {
+        assert(this.num_qubits >= 2,
+            "The number of qubits must be greater than or equal to two in order to use controlled gates");
+
+        update_visualization_arr("CZ", [control_qubit_idx, target_qubit_idx]);
+
+        Matrix!(Complex!real) pauli_z = Matrix!(Complex!real)(2, 2, [
+                Vector!(Complex!real)(2, [
+                        Complex!real(1, 0), Complex!real(0, 0)
+                    ]),
+                Vector!(Complex!real)(2, [
+                        Complex!real(0, 0), Complex!real(-1, 0)
+                    ])
+            ]);
+
+        Matrix!(Complex!real) cz_op = build_full_controlled_gate(pauli_z, control_qubit_idx, target_qubit_idx);
+        this.density_mat = cz_op.mult_mat(this.density_mat).mult_mat(cz_op.dagger());
+    }
+
+    /**
+    * Overload of the controlled z gate to apply to multiple qubit pairs at once
+    *
+    * params:
+    * qubit_idxs = An array of tuples of qubit indices with (int, int) pairs where
+    *              index 0 is control and index 1 is target
+    */
+    void cz(Tuple!(int, int)[] qubit_idxs) {
+        foreach (idx_tuple; qubit_idxs) {
+            assert(idx_tuple[0] < this.num_qubits && idx_tuple[1] < this.num_qubits,
+                "One or more of the qubit indices is beyond the amount specified for the system");
+            this.cz(idx_tuple[0], idx_tuple[1]);
+        }
+    }
+
+    /**
+    * The SWAP gate takes two qubits and if their states are different at index i it calculates a
+    * new position j to swap the amplitudes of two states.
+    *
+    * params:
+    * qubit1 = the first qubit to be swapped by the gate
+    *
+    * qubit2 = the second qubit to be swapped by the gate
+    */
+    void swap(int qubit1, int qubit2) {
+        assert(this.num_qubits >= 2,
+            "The number of qubits must be greater than or equal to two in order to use the swap gates");
+        assert(this.density_mat.row_num == 4 && this.density_mat.col_num == 4,
+            "The density matrix does not have the correct dimensions to apply the SWAP gate to it");
+
+        update_visualization_arr("SWAP", [qubit1, qubit2]);
+
+        Matrix!(Complex!real) swap = Matrix!(Complex!real)(4, 4, [
+                Vector!(Complex!real)(4, [
+                        Complex!real(1, 0), Complex!real(0, 0),
+                        Complex!real(0, 0), Complex!real(0, 0)
+                    ]),
+                Vector!(Complex!real)(4, [
+                        Complex!real(0, 0), Complex!real(0, 0),
+                        Complex!real(1, 0), Complex!real(0, 0)
+                    ]),
+                Vector!(Complex!real)(4, [
+                        Complex!real(0, 0), Complex!real(1, 0),
+                        Complex!real(0, 0), Complex!real(0, 0)
+                    ]),
+                Vector!(Complex!real)(4, [
+                        Complex!real(0, 0), Complex!real(0, 0),
+                        Complex!real(0, 0), Complex!real(1, 0)
+                    ]),
+            ]);
+
+        this.density_mat = swap.mult_mat(this.density_mat).mult_mat(swap.dagger());
+    }
+
+    /**
+    * Overload of the swap gate to apply it to multiple qubit pairs at once
+    *
+    * params:
+    * qubit_idxs = An array of qubit indices as tuples of (int, int) pairs
+    */
+    void swap(Tuple!(int, int)[] qubit_idxs) {
+        foreach (idx_tuple; qubit_idxs) {
+            assert(idx_tuple[0] < this.num_qubits && idx_tuple[1] < this.num_qubits,
+                "One or more of the qubit indices is beyond the amount specified for the system");
+            this.swap(idx_tuple[0], idx_tuple[1]);
+        }
+    }
+
+    /**
+    * The iSWAP gate does the same thing as the SWAP gate but also multiplies the amplitudes
+    * of the states at index i and j by 0+1i
+    *
+    * params:
+    * qubit1 = the first qubit to be swapped by the gate
+    *
+    * qubit2 = the second qubit to be swapped by the gate
+    */
+    void iswap(int qubit1, int qubit2) {
+        assert(this.num_qubits >= 2,
+            "The number of qubits must be greater than or equal to two in order to use the swap gates");
+        assert(this.density_mat.row_num == 4 && this.density_mat.col_num == 4,
+            "The density matrix does not have the correct dimensions to apply the SWAP gate to it");
+
+        update_visualization_arr("iSWAP", [qubit1, qubit2]);
+
+        Matrix!(Complex!real) iswap = Matrix!(Complex!real)(4, 4, [
+                Vector!(Complex!real)(4, [
+                        Complex!real(1, 0), Complex!real(0, 0),
+                        Complex!real(0, 0), Complex!real(0, 0)
+                    ]),
+                Vector!(Complex!real)(4, [
+                        Complex!real(0, 0), Complex!real(0, 0),
+                        Complex!real(0, 1), Complex!real(0, 0)
+                    ]),
+                Vector!(Complex!real)(4, [
+                        Complex!real(0, 0), Complex!real(0, 1),
+                        Complex!real(0, 0), Complex!real(0, 0)
+                    ]),
+                Vector!(Complex!real)(4, [
+                        Complex!real(0, 0), Complex!real(0, 0),
+                        Complex!real(0, 0), Complex!real(1, 0)
+                    ]),
+            ]);
+
+        this.density_mat = iswap.mult_mat(this.density_mat).mult_mat(iswap.dagger());
+    }
+
+    /**
+    * Overload of the iswap gate to apply it to multiple qubit pairs at once
+    *
+    * params:
+    * qubit_idxs = An array of qubit indices as tuples of (int, int) pairs
+    */
+    void iswap(Tuple!(int, int)[] qubit_idxs) {
+        foreach (idx_tuple; qubit_idxs) {
+            assert(idx_tuple[0] < this.num_qubits && idx_tuple[1] < this.num_qubits,
+                "One or more of the qubit indices is beyond the amount specified for the system");
+            this.iswap(idx_tuple[0], idx_tuple[1]);
+        }
+    }
+
+    /**
+    * The Rx gate rotates the state vector around the x axis of the bloch sphere by some angle
+    * theta in radians. If theta is PI then it rotates the qubit 180 degrees, essentially flipping
+    * it like a pauli-x gate. If theta is PI/2 then it creates an equal superposition over the |0>
+    * and |1> states but with a specific phase shift applied. If theta is 0 then the qubit does not 
+    * change at all.
+    *
+    * params:
+    * qubit_idx = the index of the qubit to be affected by the gate
+    *
+    * theta = the angle to rotate the qubit by in radians
+    */
+    void rx(int qubit_idx, real theta) {
+        update_visualization_arr("RX", [qubit_idx]);
+
+        Matrix!(Complex!real) rx = Matrix!(Complex!real)(2, 2, [
+                Vector!(Complex!real)(2, [
+                        Complex!real(cos(theta / 2), 0),
+                        Complex!real(0, -1) * sin(theta / 2)
+                    ]),
+                Vector!(Complex!real)(2, [
+                        Complex!real(0, -1) * sin(theta / 2),
+                        Complex!real(cos(theta / 2), 0)
+                    ])
+            ]);
+
+        Matrix!(Complex!real) rx_op = build_full_gate(rx, qubit_idx);
+        this.density_mat = rx_op.mult_mat(this.density_mat).mult_mat(rx_op.dagger());
+    }
+
+    /**
+    * Overload of the Rx gate to apply it to multiple qubits at once with different values of theta
+    *
+    * params:
+    * qubit_idxs = An array of qubit indices and theta values in tuples of (int, real) pairs
+    */
+    void rx(Tuple!(int, real)[] qubit_idxs) {
+        foreach (idx_tuple; qubit_idxs) {
+            assert(idx_tuple[0] < this.num_qubits,
+                "One or more of the qubit indices is beyond the amount you specified for the system");
+            this.rx(idx_tuple[0], idx_tuple[1]);
+        }
+    }
+
+    /**
+    * The Ry gate rotates the state vector by an angle theta in radiansaround the y-axis in the bloch sphere. 
+    * The main difference between the Rx gate and this one is that this one does not introduce any imaginary 
+    * values into the amplitudes.
+    *
+    * params:
+    * qubit_idx = the index of the qubit to be affected
+    * 
+    * theta = the angle in radians to rotate the qubit around the y-axis
+    */
+    void ry(int qubit_idx, real theta) {
+        update_visualization_arr("RY", [qubit_idx]);
+
+        Matrix!(Complex!real) ry = Matrix!(Complex!real)(2, 2, [
+                Vector!(Complex!real)(2, [
+                        Complex!real(cos(theta / 2), 0),
+                        Complex!real(-sin(theta / 2), 0)
+                    ]),
+                Vector!(Complex!real)(2, [
+                        Complex!real(sin(theta / 2), 0),
+                        Complex!real(cos(theta / 2), 0)
+                    ])
+            ]);
+
+        Matrix!(Complex!real) ry_op = build_full_gate(ry, qubit_idx);
+        this.density_mat = ry_op.mult_mat(this.density_mat).mult_mat(ry_op.dagger());
+    }
+
+    /**
+    * Overload of the Ry gate to apply it to multiple qubits at once with different values of theta
+    *
+    * params:
+    * qubit_idxs = An array of qubit indices and theta values in tuples of (int, real) pairs
+    */
+    void ry(Tuple!(int, real)[] qubit_idxs) {
+        foreach (idx_tuple; qubit_idxs) {
+            assert(idx_tuple[0] < this.num_qubits,
+                "One or more of the qubit indices is beyond the amount you specified for the system");
+            this.ry(idx_tuple[0], idx_tuple[1]);
+        }
+    }
+
+    /**
+    * The Rz gate applies a phase shift to the target qubit based on its state. If the target qubit is 
+    * in the state |0> then it applies a phase shift of e^-i(theta/2). If the qubit is in the state |1>
+    * then it applies a phase shift of e^i(theta/2).
+    *
+    * params:
+    * qubit_idx = the index of the qubit to affect
+    *
+    * theta = the angle in radians to apply to the phase shift exponential
+    */
+    void rz(int qubit_idx, real theta) {
+        update_visualization_arr("RZ", [qubit_idx]);
+
+        Matrix!(Complex!real) rz = Matrix!(Complex!real)(2, 2, [
+                Vector!(Complex!real)(2, [
+                        exp(Complex!real(0, -1) * theta), Complex!real(0, 0)
+                    ]),
+                Vector!(Complex!real)(2, [
+                        Complex!real(0, 0), exp(Complex!real(0, 1) * theta)
+                    ])
+            ]);
+
+        Matrix!(Complex!real) rz_op = build_full_gate(rz, qubit_idx);
+        this.density_mat = rz_op.mult_mat(this.density_mat).mult_mat(rz_op.dagger());
+    }
+
+    /**
+    * Overload of the Rz gate to apply it to multiple qubits at once with different values of theta
+    *
+    * params:
+    * qubit_idxs = An array of qubit indices and theta values in tuples of (int, real) pairs
+    */
+    void rz(Tuple!(int, real)[] qubit_idxs) {
+        foreach (idx_tuple; qubit_idxs) {
+            assert(idx_tuple[0] < this.num_qubits,
+                "One or more of the qubit indices is beyond the amount you specified for the system");
+            this.rz(idx_tuple[0], idx_tuple[1]);
+        }
+    }
+
+    /**
+    * The CR_k gate or controlled rotation of order k gate, rotate the phase by e^2 * PI / 2^k
+    * if and only if the control and target qubits are 1
+    *
+    * params:
+    * control_qubit_idx = the index of the qubit which determines if the target is affected
+    *
+    * target_qubit_idx = the index of the qubit which is affected by the control's state
+    *
+    * k = the exponent k to apply in the phase factor
+    *
+    * inverse = whether or not to invert the gate, this gate is not hermittian so it is not it's
+    *           own inverse
+    */
+    void cr(int control_qubit_idx, int target_qubit_idx, int k, bool inverse = false) {
+        update_visualization_arr("CR", [control_qubit_idx, target_qubit_idx]);
+
+        Complex!real exponential = Complex!real(0, 0);
+        if (inverse) {
+            exponential = expi(-2 * PI / pow(2.0, k));
+        } else {
+            exponential = expi(2 * PI / pow(2.0, k));
+
+        }
+
+        Matrix!(Complex!real) cr = Matrix!(Complex!real)(2, 2, [
+                Vector!(Complex!real)(2, [
+                        Complex!real(1, 0), Complex!real(0, 0)
+                    ]),
+                Vector!(Complex!real)(2, [Complex!real(0, 0), exponential])
+            ]);
+
+        Matrix!(Complex!real) cr_op = build_full_controlled_gate(cr, control_qubit_idx, target_qubit_idx);
+        this.density_mat = cr_op.mult_mat(this.density_mat).mult_mat(cr_op.dagger());
+    }
 }
