@@ -55,6 +55,19 @@ void compile(const string[] compile_cmd, bool library = true, string example_nam
     }
 }
 
+void remove_o_files() {
+    foreach (entry; dirEntries(".", SpanMode.shallow)) {
+        if (entry.isDir()) {
+            continue;
+        }
+
+        if (entry.name.endsWith(".o")) {
+            remove(entry.name);
+        }
+    }
+
+}
+
 void main(string[] args) {
     auto help_info = getopt(args,
         "c|compiler", "specify the compiler to use (default: dmd)", &compiler,
@@ -68,11 +81,6 @@ void main(string[] args) {
     }
 
     if (cleanup) {
-        string library_file = "libqsld.a";
-        if (library_file.exists) {
-            remove(format("./%s", library_file));
-        }
-
         chdir("./examples");
         foreach (entry; dirEntries(".", SpanMode.shallow)) {
             if (entry.isDir()) {
@@ -88,18 +96,33 @@ void main(string[] args) {
         exit(0);
     }
 
-    const string[] LIBRARY_BUILD_COMMAND = [
-        compiler, "-lib", "-O", "-of=libqsld.a", "-I."
-    ] ~ library_files;
+    string[] flags;
+    if (compiler == "ldc2") {
+        flags = ["-lib", "-O", "-of=libqsld.a", "--oq"];
+    } else {
+        flags = ["-lib", "-O", "-of=libqsld.a"];
+    }
+
+    const string[] LIBRARY_BUILD_COMMAND = [compiler] ~ flags ~ library_files;
     string f = "libqsld.a";
     if (!force && !f.exists) {
         compile(LIBRARY_BUILD_COMMAND);
+        if (compiler == "ldc2") {
+            remove_o_files();
+        }
     } else if (force && f.exists) {
         compile(LIBRARY_BUILD_COMMAND);
+        if (compiler == "ldc2") {
+            remove_o_files();
+        }
     } else if (!force && f.exists) {
         writeln("The library file libqsld.a already exists...skipping, please use -f or --force or remove the existing file to recompile it");
+        exit(0);
     } else {
         compile(LIBRARY_BUILD_COMMAND);
+        if (compiler == "ldc2") {
+            remove_o_files();
+        }
     }
 
     foreach (example; examples) {
