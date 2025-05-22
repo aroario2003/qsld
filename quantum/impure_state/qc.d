@@ -16,6 +16,8 @@ import std.stdio;
 import std.complex;
 import std.math;
 import std.typecons;
+import std.random;
+import std.format;
 
 // linear algebra modules
 import linalg.vector;
@@ -763,5 +765,109 @@ struct QuantumCircuit {
 
         Matrix!(Complex!real) cr_op = build_full_controlled_gate(cr, control_qubit_idx, target_qubit_idx);
         this.density_mat = cr_op.mult_mat(this.density_mat).mult_mat(cr_op.dagger());
+    }
+
+    // measurement of a single qubit internal logic, this function exists
+    // solely to prevent code duplication
+    private string measure_internal(int qubit_idx) {
+
+        Matrix!(Complex!real) projection_0 = Matrix!(Complex!real)(2, 2, [
+                Vector!(Complex!real)(2, [
+                        Complex!real(1, 0), Complex!real(0, 0)
+                    ]),
+                Vector!(Complex!real)(2, [
+                        Complex!real(0, 0), Complex!real(0, 0)
+                    ])
+            ]);
+
+        Matrix!(Complex!real) projection_1 = Matrix!(Complex!real)(2, 2, [
+                Vector!(Complex!real)(2, [
+                        Complex!real(0, 0), Complex!real(0, 0)
+                    ]),
+                Vector!(Complex!real)(2, [
+                        Complex!real(0, 0), Complex!real(1, 0)
+                    ])
+            ]);
+
+        Matrix!(Complex!real) identity = Matrix!(Complex!real)(2, 2, []).identity(2);
+
+        Matrix!(Complex!real)[] kronecker_chain_p0;
+        for (int i = this.num_qubits - 1; i >= 0; i--) {
+            if (i == qubit_idx) {
+                kronecker_chain_p0[kronecker_chain_p0.length++] = projection_0;
+            } else {
+                kronecker_chain_p0[kronecker_chain_p0.length++] = identity;
+            }
+        }
+
+        Matrix!(Complex!real)[] kronecker_chain_p1;
+        for (int i = this.num_qubits - 1; i >= 0; i--) {
+            if (i == qubit_idx) {
+                kronecker_chain_p1[kronecker_chain_p1.length++] = projection_1;
+            } else {
+                kronecker_chain_p1[kronecker_chain_p1.length++] = identity;
+            }
+        }
+
+        Matrix!(Complex!real) full_operator_p0 = kronecker_chain_p0[0];
+        for (int i = 1; i < kronecker_chain_p0.length; i++) {
+            full_operator_p0 = full_operator_p0.kronecker(kronecker_chain_p0[i]);
+        }
+
+        Matrix!(Complex!real) full_operator_p1 = kronecker_chain_p1[0];
+        for (int i = 1; i < kronecker_chain_p1.length; i++) {
+            full_operator_p1 = full_operator_p1.kronecker(kronecker_chain_p1[i]);
+        }
+
+        real probability_0 = full_operator_p0.mult_mat(this.density_mat).trace();
+
+        auto rng = Random(unpredictableSeed);
+        auto r = uniform(0.0, 1.0f, rng);
+
+        int result;
+
+        if (r < probability_0) {
+            result = 0;
+        } else if (r >= probability_0) {
+            result = 1;
+        }
+
+        return format("%d", result);
+    }
+
+    /**
+    * Measure the state of one qubit
+    *
+    * params: 
+    * qubit_idx = The index of the qubit to measure
+    *
+    * returns: A string representing the state of the qubit measured
+    */
+    string measure(int qubit_idx) {
+        string result = measure_internal(qubit_idx);
+        return result;
+    }
+
+    /**
+    * Overload of the measure function to measure the qubit
+    * many times to see the probabilistic outcomes
+    *
+    * params:
+    * qubit_idx = The index of the qubit to measure
+    * 
+    * shots = The amount of times to measure the qubit
+    *
+    * returns: A string to int map, representing the state 
+    *          measured and the amount of times it was measured
+    */
+    int[string] measure(int qubit_idx, int shots) {
+        assert(shots >= 2,
+            "using this overload of the measure function requires shots to be greater than or equal to 2, it is recommended to use over a 1000");
+        int[string] counts;
+        for (int i = 0; i < shots; i++) {
+            string result = measure_internal(qubit_idx);
+            counts[result] += 1;
+        }
+        return counts;
     }
 }

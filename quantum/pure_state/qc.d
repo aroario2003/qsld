@@ -914,8 +914,7 @@ struct QuantumCircuit {
     }
 
     /**
-    * Measure the state of one qubit and collapse parts of the 
-    * state vector accordingly
+    * Measure the state of one qubit
     *
     * params:
     * qubit_idx = The index of the qubit to measure
