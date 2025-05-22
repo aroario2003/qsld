@@ -877,12 +877,84 @@ struct QuantumCircuit {
         return result;
     }
 
-    // measurement internal logic, this function exists solely to prevent code duplication
-    private string measure_internal() {
-        Vector!float probs = Vector!float(cast(int) this.state.length(), new float[this
-                .state.length()]);
+    // measurement of a single qubit internal logic, this function
+    // exists solely to prevent code duplication
+    private string measure_internal(int qubit_idx) {
+        real probability_0 = 0;
+        real probability_1 = 0;
 
-        // Take the magnitude of each complex probability amplitude
+        // sum probabilities of the qubit in each state
+        for (int i = 0; i < this.state.length(); i++) {
+            bool qubit_is_zero = (i & (1 << qubit_idx)) == 0;
+            bool qubit_is_one = (i & (1 << qubit_idx)) != 0;
+
+            if (qubit_is_zero) {
+                real state_prob = norm(this.state[i]);
+                probability_0 += state_prob;
+            } else if (qubit_is_one) {
+                real state_prob = norm(this.state[i]);
+                probability_1 += state_prob;
+            }
+        }
+
+        // get a random number over a uniform distribution
+        auto rng = Random(unpredictableSeed);
+        auto r = uniform(0.0, 1.0f, rng);
+
+        int result;
+
+        // determine measurement result
+        if (r < probability_0) {
+            result = 0;
+        } else if (r >= probability_0) {
+            result = 1;
+        }
+
+        return format("%d", result);
+    }
+
+    /**
+    * Measure the state of one qubit and collapse parts of the 
+    * state vector accordingly
+    *
+    * params:
+    * qubit_idx = The index of the qubit to measure
+    *
+    * returns: A string representing the measured state of the qubit
+    */
+    string measure(int qubit_idx) {
+        string result = measure_internal(qubit_idx);
+        return result;
+    }
+
+    /**
+    * Overload of the measure function to measure the qubit
+    * many times to see the probabilistic outcomes
+    *
+    * params:
+    * qubit_idx = The index of the qubit to measure
+    * 
+    * shots = The amount of times to measure the qubit
+    *
+    * returns: A string to int map, representing the state 
+    *          measured and the amount of times it was measured
+    */
+    int[string] measure(int qubit_idx, int shots) {
+        assert(shots >= 2,
+            "using this overload of the measure function requires shots to be greater than or equal to 2, it is recommended to use over a 1000");
+        int[string] counts;
+        for (int i = 0; i < shots; i++) {
+            string result = measure_internal(qubit_idx);
+            counts[result] += 1;
+        }
+        return counts;
+    }
+
+    // measurement for the entire system internal logic, this function exists solely 
+    // to prevent code duplication
+    private string measure_all_internal() {
+        Vector!float probs = Vector!float(cast(int) this.state.length(), new float[this
+                .state.length()]); // Take the magnitude of each complex probability amplitude
         foreach (i, c; this.state.elems) {
             float magnitude = sqrt(pow(c.re, 2) + pow(c.im, 2));
             float prob = pow(magnitude, 2);
@@ -911,8 +983,8 @@ struct QuantumCircuit {
     *
     * returns: the bitstring of the state which was measured probabilistically
     */
-    string measure() {
-        string binary_result = measure_internal();
+    string measure_all() {
+        string binary_result = measure_all_internal();
         return binary_result;
     }
 
@@ -925,11 +997,12 @@ struct QuantumCircuit {
     *
     * returns: An associative array of bitstring to amount of times it was measured
     */
-    int[string] measure(int shots) {
-        assert(shots >= 2, "using this overload of the measure function requires shots to be greater than or equal to 2, it is recommended to use over a 1000");
+    int[string] measure_all(int shots) {
+        assert(shots >= 2,
+            "using this overload of the measure function requires shots to be greater than or equal to 2, it is recommended to use over a 1000");
         int[string] counts;
         for (int i = 0; i < shots; i++) {
-            string binary_result = measure_internal();
+            string binary_result = measure_all_internal();
             counts[binary_result] += 1;
         }
         return counts;
