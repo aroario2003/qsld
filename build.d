@@ -117,7 +117,6 @@ void main(string[] args) {
         }
     } else if (!force && f.exists) {
         writeln("The library file libqsld.a already exists...skipping, please use -f or --force or remove the existing file to recompile it");
-        exit(0);
     } else {
         compile(LIBRARY_BUILD_COMMAND);
         if (compiler == "ldc2") {
