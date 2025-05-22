@@ -13,6 +13,7 @@ import core.stdc.stdlib : exit;
 struct Visualization {
     Tuple!(string, int[], int)[] vis_arr;
     int num_qubits;
+    int initial_state_idx;
 
     /**
     * The constructor for the type that allows for drawing the circuit
@@ -23,9 +24,10 @@ struct Visualization {
     * 
     * num_qubits = The number of qubits in the system 
     */
-    this(Tuple!(string, int[], int)[] vis_arr, int num_qubits) {
+    this(Tuple!(string, int[], int)[] vis_arr, int num_qubits, int initial_state_idx) {
         this.vis_arr = vis_arr;
         this.num_qubits = num_qubits;
+        this.initial_state_idx = initial_state_idx;
     }
 
     /**
@@ -44,7 +46,10 @@ struct Visualization {
 
         string[][] lines = [];
         for (int i = 0; i < this.num_qubits; i++) {
-            lines[lines.length++] = ["\\lstick{\\ket{0}} &"];
+            int qubit_val = this.initial_state_idx & (1 << i);
+            lines[lines.length++] = [
+                format("\\lstick{\\ket{%d}} &", (qubit_val >> i))
+            ];
         }
 
         foreach (i, item; this.vis_arr) {
@@ -56,36 +61,28 @@ struct Visualization {
                 while (lines[qubit_idxs[0]].length < timestep) {
                     lines[qubit_idxs[0]][lines[qubit_idxs[0]].length++] = " \\qw &";
                 }
+
                 lines[qubit_idxs[0]][lines[qubit_idxs[0]].length++] = format(" \\gate{%s} &", gate_name);
             } else {
-                foreach (j; qubit_idxs) {
-                    if (lines[j].length < timestep) {
-                        while (lines[j].length < timestep) {
+                for (int j = 0; j < lines.length; j++) {
+                    if (lines[j].length - 1 < timestep) {
+                        while (lines[j].length - 1 < timestep) {
                             lines[j][lines[j].length++] = " \\qw &";
                         }
                     }
                 }
                 switch (gate_name) {
                 case "CX":
-                    lines[qubit_idxs[0]].length = timestep + 1;
-                    lines[qubit_idxs[1]].length = timestep + 1;
-
-                    lines[qubit_idxs[0]][timestep] = format(" \\ctrl{%d} &", qubit_idxs[1] - qubit_idxs[0]);
-                    lines[qubit_idxs[1]][timestep] = " \\targ{} &";
+                    lines[qubit_idxs[0]][lines[qubit_idxs[0]].length++] = format(" \\ctrl{%d} &", qubit_idxs[1] - qubit_idxs[0]);
+                    lines[qubit_idxs[1]][lines[qubit_idxs[1]].length++] = " \\targ{} &";
                     break;
                 case "SWAP":
-                    lines[qubit_idxs[0]].length = timestep + 1;
-                    lines[qubit_idxs[1]].length = timestep + 1;
-
-                    lines[qubit_idxs[0]][timestep] = format(" \\swap{%d} &", qubit_idxs[1] - qubit_idxs[0]);
-                    lines[qubit_idxs[1]][timestep] = " \\targX{} &";
+                    lines[qubit_idxs[0]][lines[qubit_idxs[0]].length++] = format(" \\swap{%d} &", qubit_idxs[1] - qubit_idxs[0]);
+                    lines[qubit_idxs[1]][lines[qubit_idxs[1]].length++] = " \\targX{} &";
                     break;
                 default:
-                    lines[qubit_idxs[0]].length = timestep + 1;
-                    lines[qubit_idxs[1]].length = timestep + 1;
-
-                    lines[qubit_idxs[0]][timestep] = format(" \\ctrl{%d} &", qubit_idxs[1] - qubit_idxs[0]);
-                    lines[qubit_idxs[1]][timestep] = format(" \\gate{%s} &", gate_name);
+                    lines[qubit_idxs[0]][lines[qubit_idxs[0]].length++] = format(" \\ctrl{%d} &", qubit_idxs[1] - qubit_idxs[0]);
+                    lines[qubit_idxs[1]][lines[qubit_idxs[1]].length++] = format(" \\gate{%s} &", gate_name);
                 }
             }
         }

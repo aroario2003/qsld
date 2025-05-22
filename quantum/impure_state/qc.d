@@ -28,6 +28,7 @@ struct QuantumCircuit {
     int num_qubits;
     Matrix!(Complex!real) density_mat;
     int num_probabilities;
+    int initial_state_idx;
 
     // These are for circuit visualization
     int timestep;
@@ -41,6 +42,7 @@ struct QuantumCircuit {
     */
     this(int num_qubits) {
         this.num_qubits = num_qubits;
+        this.initial_state_idx = 0;
 
         this.num_probabilities = pow(2, this.num_qubits);
         Complex!real[] state_arr = new Complex!real[num_probabilities];
@@ -64,6 +66,7 @@ struct QuantumCircuit {
     */
     this(int num_qubits, int starting_state_idx) {
         this.num_qubits = num_qubits;
+        this.initial_state_idx = starting_state_idx;
 
         this.num_probabilities = pow(2, this.num_qubits);
         Complex!real[] state_arr = new Complex!real[num_probabilities];

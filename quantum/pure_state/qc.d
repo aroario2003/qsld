@@ -35,6 +35,7 @@ struct QuantumCircuit {
     // These are for the circuit itself
     int num_qubits;
     Vector!(Complex!real) state;
+    int initial_state_idx;
 
     // These are for circuit visualization
     int timestep;
@@ -51,6 +52,7 @@ struct QuantumCircuit {
     */
     this(int num_qubits) {
         this.num_qubits = num_qubits;
+        this.initial_state_idx = 0;
 
         int num_probabilities = pow(2, this.num_qubits);
         Complex!real[] state_arr = new Complex!real[num_probabilities];
@@ -76,6 +78,7 @@ struct QuantumCircuit {
     */
     this(int num_qubits, int starting_state_idx) {
         this.num_qubits = num_qubits;
+        this.initial_state_idx = starting_state_idx;
 
         int num_probabilities = pow(2, this.num_qubits);
         Complex!real[] state_arr = new Complex!real[num_probabilities];
@@ -101,6 +104,7 @@ struct QuantumCircuit {
     */
     this(int num_qubits, DecoherenceConfig decoherence_conf) {
         this.num_qubits = num_qubits;
+        this.initial_state_idx = 0;
 
         int num_probabilities = pow(2, this.num_qubits);
         Complex!real[] state_arr = new Complex!real[num_probabilities];
@@ -129,6 +133,7 @@ struct QuantumCircuit {
     */
     this(int num_qubits, int starting_state_idx, DecoherenceConfig decoherence_conf) {
         this.num_qubits = num_qubits;
+        this.initial_state_idx = starting_state_idx;
 
         int num_probabilities = pow(2, this.num_qubits);
         Complex!real[] state_arr = new Complex!real[num_probabilities];
@@ -1016,7 +1021,8 @@ struct QuantumCircuit {
     * filename = The name of the file to write the latex to and to compile (default: circuit.tex)
     */
     void draw(string compiler = "pdflatex", string filename = "circuit.tex") {
-        Visualization vis = Visualization(this.visualization_arr, this.num_qubits);
+        Visualization vis = Visualization(this.visualization_arr, this.num_qubits, this
+                .initial_state_idx);
         vis.parse_and_write_vis_arr(filename);
         vis.compile_tex_and_cleanup(compiler, filename);
     }
