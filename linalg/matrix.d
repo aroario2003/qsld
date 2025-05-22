@@ -262,6 +262,17 @@ struct Matrix(T) {
         return trace_sum.re;
     }
 
+    Vector!T get_diagonal() {
+        Vector!T diagonal = Vector!T(this.row_num, []);
+
+        int diagonal_idx = 0;
+        foreach (row; this.rows) {
+            diagonal.append(row[diagonal_idx]);
+            diagonal_idx++;
+        }
+        return diagonal;
+    }
+
     //operator overload for matrix multiplication
     Matrix opBinary(string s : "*")(Matrix rhs) {
         return this.mult_mat(rhs);

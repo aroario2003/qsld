@@ -870,4 +870,55 @@ struct QuantumCircuit {
         }
         return counts;
     }
+
+    // measurement for the entire system internal logic, this function
+    // exists solely to prevent code duplication
+    private string measure_all_internal() {
+        Vector!(Complex!real) probs = this.density_mat.get_diagonal();
+
+        auto rng = Random(unpredictableSeed);
+        auto r = uniform(0.0f, 1.0f, rng);
+
+        float sum = 0;
+        string binary_result;
+        foreach (i, prob; probs.elems) {
+            sum += prob.re;
+            if (r < sum) {
+                binary_result = format("%0*b", this.num_qubits, i);
+                break;
+            }
+        }
+
+        return binary_result;
+    }
+
+    /**
+    * Measure the entire system
+    *
+    * returns: A bitstring representing the final state of the system
+    */
+    string measure_all() {
+        string binary_result = measure_all_internal();
+        return binary_result;
+    }
+
+    /**
+    * Overload of the measure_all function to measure the 
+    * entire system many times
+    *
+    * params:
+    * shots = The amount of times to measure the entire system
+    *
+    * returns: An associative array of bitstring to amount of times it was measured
+    */
+    int[string] measure_all(int shots) {
+        assert(shots >= 2,
+            "using this overload of the measure function requires shots to be greater than or equal to 2, it is recommended to use over a 1000");
+        int[string] counts;
+        for (int i = 0; i < shots; i++) {
+            string binary_result = measure_all_internal();
+            counts[binary_result] += 1;
+        }
+        return counts;
+    }
 }
