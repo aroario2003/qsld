@@ -23,6 +23,9 @@ import std.format;
 import linalg.vector;
 import linalg.matrix;
 
+// quantum related modules
+import quantum.impure_state.observable;
+
 struct QuantumCircuit {
     // These are for the circuit itself
     int num_qubits;
@@ -768,6 +771,28 @@ struct QuantumCircuit {
 
         Matrix!(Complex!real) cr_op = build_full_controlled_gate(cr, control_qubit_idx, target_qubit_idx);
         this.density_mat = cr_op.mult_mat(this.density_mat).mult_mat(cr_op.dagger());
+    }
+
+    /**
+    * Computes the expectation value of an observable on the current quantum state of the system
+    * 
+    * params:
+    * observable = The observable affecting the quantum system as a linear combination of weighted 
+    *              pauli operator kronecker products
+    *
+    * returns: A real value, the average measurement value or expectation value
+    */
+    real expectation_value(Observable observable) {
+        Matrix!(Complex!real)[] full_pauli_ops = observable.apply(this.density_mat);
+        real sum = 0;
+
+        foreach (i, pauli_op; full_pauli_ops) {
+            Complex!real trace = Complex!real(pauli_op.trace(), 0);
+            Complex!real result = observable.coeffs[i] * trace;
+            sum = sum + result.re;
+        }
+
+        return sum.re;
     }
 
     // measurement of a single qubit internal logic, this function exists

@@ -247,18 +247,13 @@ struct Matrix(T) {
     real trace()() if (is(T == Complex!real)) {
         assert(this.row_num == this.col_num, "The matrix must be square to take the trace");
 
-        Matrix!T mat_squared = this.mult_mat(this);
-        int diagonal_idx = 0;
         Complex!real trace_sum = Complex!real(0, 0);
+        Vector!T diagonal = this.get_diagonal();
 
-        foreach (row; mat_squared.rows) {
-            foreach (i, elem; row.elems) {
-                if (i == diagonal_idx) {
-                    trace_sum += elem;
-                    diagonal_idx++;
-                }
-            }
+        foreach (elem; diagonal.elems) {
+            trace_sum = trace_sum + elem;
         }
+
         return trace_sum.re;
     }
 

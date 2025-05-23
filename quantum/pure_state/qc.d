@@ -294,14 +294,6 @@ struct QuantumCircuit {
     void pauli_x(int qubit_idx) {
         update_visualization_arr("X", [qubit_idx]);
 
-        Matrix!(Complex!real) pauli_x = Matrix!(Complex!real)(2, 2, [
-                Vector!(Complex!real)(2, [
-                        Complex!real(0, 0), Complex!real(1, 0)
-                    ]),
-                Vector!(Complex!real)(2, [
-                        Complex!real(1, 0), Complex!real(0, 0)
-                    ])
-            ]);
         auto pairs = new Vector!int[(this.state.length() / 2)];
         int pairs_idx = 0;
 
