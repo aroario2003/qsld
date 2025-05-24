@@ -199,6 +199,31 @@ struct QuantumCircuit {
         return full_pauli_op;
     }
 
+    private Matrix!(Complex!real) build_full_iswap(Matrix!(Complex!real) iswap_mat, int qubit1, int qubit2) {
+        Matrix!(Complex!real) identity = Matrix!(Complex!real)(2, 2, []).identity(2);
+        Matrix!(Complex!real) full_iswap;
+
+        for (int i = 0; i < this.num_qubits; i++) {
+            if (i == qubit1) {
+                if (i == 0) {
+                    full_iswap = iswap_mat;
+                } else {
+                    full_iswap = full_iswap.kronecker(iswap_mat);
+                }
+            } else if (i == qubit2) {
+                continue;
+            } else {
+                if (i == 0) {
+                    full_iswap = identity;
+                } else {
+                    full_iswap = full_iswap.kronecker(identity);
+                }
+            }
+        }
+
+        return full_iswap;
+    }
+
     /**
     * The hadamard quantum gate puts the state into superposition with equal probabilities for each state in 
     * superposition if applied to all qubits in the system. Otherwise, Some states will have different probability
@@ -539,11 +564,13 @@ struct QuantumCircuit {
     *
     * qubit2 = the second qubit to be swapped by the gate
     */
-    void swap(int qubit1, int qubit2) {
+    void swap(int qubit1, int qubit2, bool visualize = true) {
         assert(this.num_qubits >= 2,
             "The number of qubits must be greater than or equal to two in order to use the swap gates");
 
-        update_visualization_arr("SWAP", [qubit1, qubit2]);
+        if (visualize) {
+            update_visualization_arr("SWAP", [qubit1, qubit2]);
+        }
 
         Matrix!(Complex!real) pauli_x = Matrix!(Complex!real)(2, 2, [
                 Vector!(Complex!real)(2, [
@@ -615,8 +642,6 @@ struct QuantumCircuit {
     void iswap(int qubit1, int qubit2) {
         assert(this.num_qubits >= 2,
             "The number of qubits must be greater than or equal to two in order to use the swap gates");
-        assert(this.density_mat.row_num == 4 && this.density_mat.col_num == 4,
-            "The density matrix does not have the correct dimensions to apply the SWAP gate to it");
 
         update_visualization_arr("iSWAP", [qubit1, qubit2]);
 
@@ -639,7 +664,30 @@ struct QuantumCircuit {
                     ]),
             ]);
 
-        this.density_mat = iswap.mult_mat(this.density_mat).mult_mat(iswap.dagger());
+        Tuple!(int, int)[] swap_seq;
+
+        if (qubit1 > qubit2) {
+            int tmp = qubit1;
+            qubit1 = qubit2;
+            qubit2 = tmp;
+        }
+
+        if (qubit1 + 1 < qubit2) {
+            while (qubit1 + 1 < qubit2) {
+                this.swap(qubit1, qubit1 + 1, false);
+                swap_seq[swap_seq.length++] = tuple(qubit1, qubit1 + 1);
+                qubit1 += 1;
+            }
+        }
+
+        Matrix!(Complex!real) full_iswap = build_full_iswap(iswap, qubit1, qubit2);
+
+        this.density_mat = full_iswap.mult_mat(this.density_mat).mult_mat(full_iswap.dagger());
+
+        for (int i = cast(int) swap_seq.length - 1; i >= 0; i--) {
+            Tuple!(int, int) item = swap_seq[i];
+            this.swap(item[0], item[1], false);
+        }
     }
 
     /**
