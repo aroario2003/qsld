@@ -18,6 +18,7 @@ import std.math;
 import std.typecons;
 import std.random;
 import std.format;
+import std.range;
 
 // linear algebra modules
 import linalg.vector;
@@ -25,6 +26,9 @@ import linalg.matrix;
 
 // quantum related modules
 import quantum.impure_state.observable;
+
+//visualization modules
+import viz.visualization;
 
 struct QuantumCircuit {
     // These are for the circuit itself
@@ -872,6 +876,8 @@ struct QuantumCircuit {
     * returns: A string representing the state of the qubit measured
     */
     string measure(int qubit_idx) {
+        update_visualization_arr("M", [qubit_idx]);
+
         string result = measure_internal(qubit_idx);
         return result;
     }
@@ -891,6 +897,9 @@ struct QuantumCircuit {
     int[string] measure(int qubit_idx, int shots) {
         assert(shots >= 2,
             "using this overload of the measure function requires shots to be greater than or equal to 2, it is recommended to use over a 1000");
+
+        update_visualization_arr("M", [qubit_idx]);
+
         int[string] counts;
         for (int i = 0; i < shots; i++) {
             string result = measure_internal(qubit_idx);
@@ -926,6 +935,8 @@ struct QuantumCircuit {
     * returns: A bitstring representing the final state of the system
     */
     string measure_all() {
+        update_visualization_arr("MA", iota(0, this.num_qubits).array);
+
         string binary_result = measure_all_internal();
         return binary_result;
     }
@@ -942,11 +953,29 @@ struct QuantumCircuit {
     int[string] measure_all(int shots) {
         assert(shots >= 2,
             "using this overload of the measure function requires shots to be greater than or equal to 2, it is recommended to use over a 1000");
+
+        update_visualization_arr("MA", iota(0, this.num_qubits).array);
+
         int[string] counts;
         for (int i = 0; i < shots; i++) {
             string binary_result = measure_all_internal();
             counts[binary_result] += 1;
         }
         return counts;
+    }
+
+    /**
+    * Draws the circuit which the user created with latex
+    *
+    * params:
+    * compiler = The name of the latex compiler to use (default: pdflatex)
+    *
+    * filename = The name of the file to write the latex to and to compile (default: circuit.tex)
+    */
+    void draw(string compiler = "pdflatex", string filename = "circuit.tex") {
+        Visualization vis = Visualization(this.visualization_arr, this.num_qubits, this
+                .initial_state_idx);
+        vis.parse_and_write_vis_arr(filename);
+        vis.compile_tex_and_cleanup(compiler, filename);
     }
 }

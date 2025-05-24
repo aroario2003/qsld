@@ -58,16 +58,32 @@ struct Visualization {
             int timestep = item[2];
 
             if (!gate_name.startsWith("C") && gate_name != "SWAP" && gate_name != "iSWAP") {
-                while (lines[qubit_idxs[0]].length < timestep) {
-                    lines[qubit_idxs[0]][lines[qubit_idxs[0]].length++] = " \\qw &";
+                if (gate_name != "M" && gate_name != "MA") {
+                    lines[qubit_idxs[0]][lines[qubit_idxs[0]].length++] = format(" \\gate{%s} &", gate_name);
+                } else {
+                    if (gate_name == "M") {
+                        lines[qubit_idxs[0]][lines[qubit_idxs[0]].length++] = " \\meter{} &";
+                    } else if (gate_name == "MA") {
+                        foreach (idx; qubit_idxs) {
+                            lines[qubit_idxs[idx]][lines[qubit_idxs[idx]].length++] = " \\meter{} &";
+                        }
+                    }
                 }
-
-                lines[qubit_idxs[0]][lines[qubit_idxs[0]].length++] = format(" \\gate{%s} &", gate_name);
             } else {
                 for (int j = 0; j < lines.length; j++) {
-                    if (lines[j].length - 1 < timestep) {
-                        while (lines[j].length - 1 < timestep) {
-                            lines[j][lines[j].length++] = " \\qw &";
+                    for (int k = 1; k < lines.length; k++) {
+                        if (j == k) {
+                            break;
+                        }
+
+                        if (lines[j].length - 1 < lines[k].length - 1) {
+                            while (lines[j].length - 1 < lines[k].length - 1) {
+                                lines[j][lines[j].length++] = " \\qw &";
+                            }
+                        } else if (lines[k].length - 1 < lines[j].length - 1) {
+                            while (lines[k].length - 1 < lines[j].length - 1) {
+                                lines[k][lines[k].length++] = " \\qw &";
+                            }
                         }
                     }
                 }
