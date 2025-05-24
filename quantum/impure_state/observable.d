@@ -1,3 +1,14 @@
+// NOTE: This file contains the code for the impure subsystem of QSLD. this means that 
+// the modules within this folder (quantum/impure_state/) work more correctly but not
+// neccessarily efficiently for mixed or impure quantum states. The lack of efficiency
+// is due to the fact that in order to maintain correctness when decohering an entangled
+// state, I must construct a density matrix and full multi-qubit gates. This leads to
+// inefficiency and high memory usage. When you are using this module it is important
+// to keep this in mind. It is recommended that you do not use more than 5 or 6 qubits 
+// in a single quantum circuit because otherwise you might kill your computer due to 
+// high memory usage. If you would like to have efficiency and correctness for pure states
+// with the ability to use more qubits, you should use the pure subsystem (quantum/pure_state/).
+
 module quantum.impure_state.observable;
 
 import std.stdio;
