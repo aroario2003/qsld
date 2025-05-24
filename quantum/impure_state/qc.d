@@ -178,6 +178,27 @@ struct QuantumCircuit {
         return control_0_op + control_1_op;
     }
 
+    private Matrix!(Complex!real) build_full_pauli_op(Matrix!(Complex!real) pauli_op, int qubit1, int qubit2) {
+        Matrix!(Complex!real) identity = Matrix!(Complex!real)(2, 2, []).identity(2);
+        Matrix!(Complex!real) full_pauli_op;
+
+        for (int i = 0; i < this.num_qubits; i++) {
+            if (i == 0 && i != qubit1 && i != qubit2) {
+                full_pauli_op = identity;
+            } else if (i == 0 && i == qubit1 && i != qubit2) {
+                full_pauli_op = pauli_op;
+            } else if (i == 0 && i != qubit1 && i == qubit2) {
+                full_pauli_op = pauli_op;
+            } else if (i != 0 && (i == qubit1 || i == qubit2)) {
+                full_pauli_op = full_pauli_op.kronecker(pauli_op);
+            } else {
+                full_pauli_op = full_pauli_op.kronecker(identity);
+            }
+        }
+
+        return full_pauli_op;
+    }
+
     /**
     * The hadamard quantum gate puts the state into superposition with equal probabilities for each state in 
     * superposition if applied to all qubits in the system. Otherwise, Some states will have different probability
@@ -521,31 +542,51 @@ struct QuantumCircuit {
     void swap(int qubit1, int qubit2) {
         assert(this.num_qubits >= 2,
             "The number of qubits must be greater than or equal to two in order to use the swap gates");
-        assert(this.density_mat.row_num == 4 && this.density_mat.col_num == 4,
-            "The density matrix does not have the correct dimensions to apply the SWAP gate to it");
 
         update_visualization_arr("SWAP", [qubit1, qubit2]);
 
-        Matrix!(Complex!real) swap = Matrix!(Complex!real)(4, 4, [
-                Vector!(Complex!real)(4, [
-                        Complex!real(1, 0), Complex!real(0, 0),
-                        Complex!real(0, 0), Complex!real(0, 0)
-                    ]),
-                Vector!(Complex!real)(4, [
-                        Complex!real(0, 0), Complex!real(0, 0),
-                        Complex!real(1, 0), Complex!real(0, 0)
-                    ]),
-                Vector!(Complex!real)(4, [
-                        Complex!real(0, 0), Complex!real(1, 0),
-                        Complex!real(0, 0), Complex!real(0, 0)
-                    ]),
-                Vector!(Complex!real)(4, [
-                        Complex!real(0, 0), Complex!real(0, 0),
+        Matrix!(Complex!real) pauli_x = Matrix!(Complex!real)(2, 2, [
+                Vector!(Complex!real)(2, [
                         Complex!real(0, 0), Complex!real(1, 0)
                     ]),
+                Vector!(Complex!real)(2, [
+                        Complex!real(1, 0), Complex!real(0, 0)
+                    ])
             ]);
 
-        this.density_mat = swap.mult_mat(this.density_mat).mult_mat(swap.dagger());
+        Matrix!(Complex!real) pauli_y = Matrix!(Complex!real)(2, 2, [
+                Vector!(Complex!real)(2, [
+                        Complex!real(0, 0), Complex!real(0, -1)
+                    ]),
+                Vector!(Complex!real)(2, [
+                        Complex!real(0, 1), Complex!real(0, 0)
+                    ])
+            ]);
+
+        Matrix!(Complex!real) pauli_z = Matrix!(Complex!real)(2, 2, [
+                Vector!(Complex!real)(2, [
+                        Complex!real(1, 0), Complex!real(0, 0)
+                    ]),
+                Vector!(Complex!real)(2, [
+                        Complex!real(0, 0), Complex!real(-1, 0)
+                    ])
+            ]);
+
+        Matrix!(Complex!real) identity = Matrix!(Complex!real)(2, 2, []).identity(2);
+
+        Matrix!(Complex!real) full_identity_op = build_full_pauli_op(identity, qubit1, qubit2);
+        Matrix!(Complex!real) full_pauli_x_op = build_full_pauli_op(pauli_x, qubit1, qubit2);
+        Matrix!(Complex!real) full_pauli_y_op = build_full_pauli_op(pauli_y, qubit1, qubit2);
+        Matrix!(Complex!real) full_pauli_z_op = build_full_pauli_op(pauli_z, qubit1, qubit2);
+
+        Matrix!(Complex!real) full_swap = full_identity_op
+            .add_mat(full_pauli_x_op)
+            .add_mat(full_pauli_y_op)
+            .add_mat(full_pauli_z_op);
+
+        full_swap = full_swap.mult_scalar(Complex!real(0.5, 0));
+
+        this.density_mat = full_swap.mult_mat(this.density_mat).mult_mat(full_swap.dagger());
     }
 
     /**
