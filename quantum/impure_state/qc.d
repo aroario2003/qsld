@@ -26,6 +26,7 @@ import linalg.matrix;
 
 // quantum related modules
 import quantum.impure_state.observable;
+import quantum.impure_state.decoherence;
 
 //visualization modules
 import viz.visualization;
@@ -40,6 +41,9 @@ struct QuantumCircuit {
     // These are for circuit visualization
     int timestep;
     Tuple!(string, int[], int)[] visualization_arr;
+
+    // This is for decoherence with T1/T2 decay
+    DecoherenceConfig decoherence_conf;
 
     /**
     * Constructor for quantum circuit object (impure subsystem) 
@@ -60,6 +64,9 @@ struct QuantumCircuit {
         Vector!(Complex!real) ket_psi = Vector!(Complex!real)(num_probabilities, state_arr);
         Matrix!(Complex!real) bra_psi = ket_psi.dagger();
         this.density_mat = ket_psi.outer_prod(bra_psi);
+        this.timestep = 0;
+
+        this.decoherence_conf = DecoherenceConfig(Nullable!T1Decay.init, Nullable!T2Decay.init, "none");
     }
 
     /**
@@ -84,6 +91,68 @@ struct QuantumCircuit {
         Vector!(Complex!real) ket_psi = Vector!(Complex!real)(num_probabilities, state_arr);
         Matrix!(Complex!real) bra_psi = ket_psi.dagger();
         this.density_mat = ket_psi.outer_prod(bra_psi);
+        this.timestep = 0;
+
+        this.decoherence_conf = DecoherenceConfig(Nullable!T1Decay.init, Nullable!T2Decay.init, "none");
+    }
+
+    /**
+    * Overload of the constructor for the quantum circuit object
+    *
+    * params:
+    * num_qubits = The number of qubits for the circuit to have
+    *
+    * decoherence_conf = The config for whether you want to use T1 or T2 decay or both
+    *                    and whether you want it be automatic, manual or not happen at all 
+    */
+    this(int num_qubits, DecoherenceConfig decoherence_conf) {
+        this.num_qubits = num_qubits;
+        this.initial_state_idx = 0;
+
+        this.num_probabilities = pow(2, this.num_qubits);
+        Complex!real[] state_arr = new Complex!real[num_probabilities];
+        //initialize state vector to all 0+0i amplitudes
+        state_arr[] = Complex!real(0, 0);
+        // start with a valid classical state by setting one of the amplitudes probabilities to 100%
+        state_arr[0] = Complex!real(1, 0);
+
+        Vector!(Complex!real) ket_psi = Vector!(Complex!real)(num_probabilities, state_arr);
+        Matrix!(Complex!real) bra_psi = ket_psi.dagger();
+        this.density_mat = ket_psi.outer_prod(bra_psi);
+        this.timestep = 0;
+
+        this.decoherence_conf = decoherence_conf;
+    }
+
+    /**
+    * Overload of the constructor for the quantum circuit object
+    *
+    * params:
+    * num_qubits = The number of qubits for the circuit to have
+    *
+    * starting_state_idx = The index in the state vector of the amplitude to have 100% 
+    *                      probability when starting out
+    *
+    * decoherence_conf = The config for whether you want to use T1 or T2 decay or both
+    *                    and whether you want it be automatic, manual or not happen at all 
+    */
+    this(int num_qubits, int starting_state_idx, DecoherenceConfig decoherence_conf) {
+        this.num_qubits = num_qubits;
+        this.initial_state_idx = starting_state_idx;
+
+        this.num_probabilities = pow(2, this.num_qubits);
+        Complex!real[] state_arr = new Complex!real[num_probabilities];
+        //initialize state vector to all 0+0i amplitudes
+        state_arr[] = Complex!real(0, 0);
+        // start with a valid classical state by setting one of the amplitudes probabilities to 100%
+        state_arr[starting_state_idx] = Complex!real(1, 0);
+
+        Vector!(Complex!real) ket_psi = Vector!(Complex!real)(num_probabilities, state_arr);
+        Matrix!(Complex!real) bra_psi = ket_psi.dagger();
+        this.density_mat = ket_psi.outer_prod(bra_psi);
+        this.timestep = 0;
+
+        this.decoherence_conf = decoherence_conf;
     }
 
     // Updates the visualization internal representation 
@@ -93,6 +162,25 @@ struct QuantumCircuit {
         this.timestep += 1;
     }
 
+    // Apply T1, T2 decay or both depending on the specification of 
+    // DecoherenceConfig
+    private void apply_decoherence(int qubit_idx, int gate_duration) {
+        if (this.decoherence_conf.decoherence_mode == "automatic") {
+            if (!this.decoherence_conf.t1.isNull()) {
+                T1Decay t1 = this.decoherence_conf.t1.get();
+                this.density_mat = t1.apply(qubit_idx, this.num_qubits, gate_duration, this
+                        .density_mat);
+            }
+
+            if (!this.decoherence_conf.t2.isNull()) {
+                T2Decay t2 = this.decoherence_conf.t2.get();
+                this.density_mat = t2.apply(qubit_idx, this.num_qubits, gate_duration, this
+                        .density_mat);
+            }
+        }
+    }
+
+    // Builds the full gate for single qubit gates
     private Matrix!(Complex!real) build_full_gate(Matrix!(Complex!real) gate_matrix, int qubit_idx) {
         Matrix!(Complex!real) identity = Matrix!(Complex!real)(2, 2, []).identity(2);
         Matrix!(Complex!real)[] kronecker_chain;
@@ -178,6 +266,7 @@ struct QuantumCircuit {
         return control_0_op + control_1_op;
     }
 
+    // Builds the full pauli operators for the swap gate
     private Matrix!(Complex!real) build_full_pauli_op(Matrix!(Complex!real) pauli_op, int qubit1, int qubit2) {
         Matrix!(Complex!real) identity = Matrix!(Complex!real)(2, 2, []).identity(2);
         Matrix!(Complex!real) full_pauli_op;
@@ -199,6 +288,7 @@ struct QuantumCircuit {
         return full_pauli_op;
     }
 
+    // Builds the full iswap gate
     private Matrix!(Complex!real) build_full_iswap(Matrix!(Complex!real) iswap_mat, int qubit1, int qubit2) {
         Matrix!(Complex!real) identity = Matrix!(Complex!real)(2, 2, []).identity(2);
         Matrix!(Complex!real) full_iswap;
@@ -246,6 +336,10 @@ struct QuantumCircuit {
 
         Matrix!(Complex!real) result = build_full_gate(hadamard, qubit_idx);
         this.density_mat = result.mult_mat(this.density_mat).mult_mat(result.dagger());
+
+        // This will only happen if DecoherenceConfig.decoherence_mode is
+        // set to automatic
+        apply_decoherence(qubit_idx, 20);
     }
 
     /**
@@ -287,6 +381,11 @@ struct QuantumCircuit {
 
         Matrix!(Complex!real) ch_op = build_full_controlled_gate(hadamard, control_qubit_idx, target_qubit_idx);
         this.density_mat = ch_op.mult_mat(this.density_mat).mult_mat(ch_op.dagger());
+
+        // This will only happen if DecoherenceConfig.decoherence_mode is
+        // set to automatic
+        apply_decoherence(control_qubit_idx, 40);
+        apply_decoherence(target_qubit_idx, 40);
     }
 
     /**
@@ -324,6 +423,10 @@ struct QuantumCircuit {
 
         Matrix!(Complex!real) pauli_x_op = build_full_gate(pauli_x, qubit_idx);
         this.density_mat = pauli_x_op.mult_mat(this.density_mat).mult_mat(pauli_x_op.dagger());
+
+        // This will only happen if DecoherenceConfig.decoherence_mode is
+        // set to automatic
+        apply_decoherence(qubit_idx, 20);
     }
 
     /**
@@ -362,6 +465,10 @@ struct QuantumCircuit {
 
         Matrix!(Complex!real) pauli_y_op = build_full_gate(pauli_y, qubit_idx);
         this.density_mat = pauli_y_op.mult_mat(this.density_mat).mult_mat(pauli_y_op.dagger());
+
+        // This will only happen if DecoherenceConfig.decoherence_mode is
+        // set to automatic
+        apply_decoherence(qubit_idx, 20);
     }
 
     /**
@@ -398,6 +505,10 @@ struct QuantumCircuit {
 
         Matrix!(Complex!real) pauli_z_op = build_full_gate(pauli_z, qubit_idx);
         this.density_mat = pauli_z_op.mult_mat(this.density_mat).mult_mat(pauli_z_op.dagger());
+
+        // This will only happen if DecoherenceConfig.decoherence_mode is
+        // set to automatic
+        apply_decoherence(qubit_idx, 0);
     }
 
     /**
@@ -438,6 +549,26 @@ struct QuantumCircuit {
 
         Matrix!(Complex!real) cnot_op = build_full_controlled_gate(pauli_x, control_qubit_idx, target_qubit_idx);
         this.density_mat = cnot_op.mult_mat(this.density_mat).mult_mat(cnot_op.dagger());
+
+        // This will only happen if DecoherenceConfig.decoherence_mode is
+        // set to automatic
+        apply_decoherence(control_qubit_idx, 100);
+        apply_decoherence(target_qubit_idx, 100);
+    }
+
+    /**
+    * Overload for the cnot gate to apply it multiple qubit pairs at once
+    * 
+    * params:
+    * qubit_idxs = An array of qubit indices as tuples of (int, int) where 
+    *              index 0 is control and index 1 is target
+    */
+    void cnot(Tuple!(int, int)[] qubit_idxs) {
+        foreach (idx_tuple; qubit_idxs) {
+            assert(idx_tuple[0] < this.num_qubits && idx_tuple[1] < this.num_qubits,
+                "One or more of the qubit indices is beyond the amount specified for the system");
+            this.cnot(idx_tuple[0], idx_tuple[1]);
+        }
     }
 
     /**
@@ -460,6 +591,10 @@ struct QuantumCircuit {
 
         Matrix!(Complex!real) s_op = build_full_gate(s, qubit_idx);
         this.density_mat = s_op.mult_mat(this.density_mat).mult_mat(s_op.dagger());
+
+        // This will only happen if DecoherenceConfig.decoherence_mode is
+        // set to automatic
+        apply_decoherence(qubit_idx, 20);
     }
 
     /**
@@ -496,6 +631,10 @@ struct QuantumCircuit {
 
         Matrix!(Complex!real) t_op = build_full_gate(t, qubit_idx);
         this.density_mat = t_op.mult_mat(this.density_mat).mult_mat(t_op.dagger());
+
+        // This will only happen if DecoherenceConfig.decoherence_mode is
+        // set to automatic
+        apply_decoherence(qubit_idx, 20);
     }
 
     /**
@@ -538,6 +677,11 @@ struct QuantumCircuit {
 
         Matrix!(Complex!real) cz_op = build_full_controlled_gate(pauli_z, control_qubit_idx, target_qubit_idx);
         this.density_mat = cz_op.mult_mat(this.density_mat).mult_mat(cz_op.dagger());
+
+        // This will only happen if DecoherenceConfig.decoherence_mode is
+        // set to automatic
+        apply_decoherence(control_qubit_idx, 40);
+        apply_decoherence(target_qubit_idx, 40);
     }
 
     /**
@@ -614,6 +758,11 @@ struct QuantumCircuit {
         full_swap = full_swap.mult_scalar(Complex!real(0.5, 0));
 
         this.density_mat = full_swap.mult_mat(this.density_mat).mult_mat(full_swap.dagger());
+
+        // This will only happen if DecoherenceConfig.decoherence_mode is
+        // set to automatic
+        apply_decoherence(qubit1, 50);
+        apply_decoherence(qubit2, 50);
     }
 
     /**
@@ -688,6 +837,11 @@ struct QuantumCircuit {
             Tuple!(int, int) item = swap_seq[i];
             this.swap(item[0], item[1], false);
         }
+
+        // This will only happen if DecoherenceConfig.decoherence_mode is
+        // set to automatic
+        apply_decoherence(qubit1, 50);
+        apply_decoherence(qubit2, 50);
     }
 
     /**
@@ -732,6 +886,10 @@ struct QuantumCircuit {
 
         Matrix!(Complex!real) rx_op = build_full_gate(rx, qubit_idx);
         this.density_mat = rx_op.mult_mat(this.density_mat).mult_mat(rx_op.dagger());
+
+        // This will only happen if DecoherenceConfig.decoherence_mode is
+        // set to automatic
+        apply_decoherence(qubit_idx, 30);
     }
 
     /**
@@ -774,6 +932,10 @@ struct QuantumCircuit {
 
         Matrix!(Complex!real) ry_op = build_full_gate(ry, qubit_idx);
         this.density_mat = ry_op.mult_mat(this.density_mat).mult_mat(ry_op.dagger());
+
+        // This will only happen if DecoherenceConfig.decoherence_mode is
+        // set to automatic
+        apply_decoherence(qubit_idx, 30);
     }
 
     /**
@@ -814,6 +976,10 @@ struct QuantumCircuit {
 
         Matrix!(Complex!real) rz_op = build_full_gate(rz, qubit_idx);
         this.density_mat = rz_op.mult_mat(this.density_mat).mult_mat(rz_op.dagger());
+
+        // This will only happen if DecoherenceConfig.decoherence_mode is
+        // set to automatic
+        apply_decoherence(qubit_idx, 30);
     }
 
     /**
@@ -864,6 +1030,11 @@ struct QuantumCircuit {
 
         Matrix!(Complex!real) cr_op = build_full_controlled_gate(cr, control_qubit_idx, target_qubit_idx);
         this.density_mat = cr_op.mult_mat(this.density_mat).mult_mat(cr_op.dagger());
+
+        // This will only happen if DecoherenceConfig.decoherence_mode is
+        // set to automatic
+        apply_decoherence(control_qubit_idx, 70);
+        apply_decoherence(target_qubit_idx, 70);
     }
 
     /**

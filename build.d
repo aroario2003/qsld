@@ -25,6 +25,7 @@ string[] library_files = [
     "quantum/pure_state/decoherence.d",
     "quantum/impure_state/qc.d",
     "quantum/impure_state/observable.d",
+    "quantum/impure_state/decoherence.d",
     "algos/qft.d",
     "algos/deutsch_jozsa.d",
     "viz/visualization.d"
