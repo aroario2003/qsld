@@ -820,7 +820,7 @@ struct QuantumCircuit {
     }
 
     /**
-    * The CR_k gate or controlled rotation of order k gate, rotate the phase by e^2 * PI / 2^k
+    * The CR_k gate or controlled rotation of order k gate, rotates the phase by e^2 * PI / 2^k
     * if and only if the control and target qubits are 1
     *
     * params:
