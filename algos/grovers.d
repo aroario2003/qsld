@@ -10,12 +10,19 @@ struct Grovers {
     int num_qubits;
     QuantumCircuit qc;
 
+    /**
+    * The constructor for the grovers algorithm object
+    *
+    * params:
+    * num_qubits = The number of qubits to use in the algorithms internal circuit
+    */
     this(int num_qubits) {
         this.num_qubits = num_qubits;
         this.qc = QuantumCircuit(this.num_qubits);
     }
 
-    private void oracle(int delegate(string) f) {
+    // The grovers algorithm oracle to be used
+    private void oracle(int function(string) f) {
         for (int i = 0; i < this.qc.state.elems.length; i++) {
             if (f(format("%0*b", this.num_qubits, i)) == 1) {
                 this.qc.state.elems[i] = this.qc.state.elems[i] * Complex!real(-1, 0);
@@ -23,6 +30,7 @@ struct Grovers {
         }
     }
 
+    // The diffusion operator to be used 
     private void diffusion() {
         Complex!real sum = Complex!real(0, 0);
         for (int i = 0; i < this.qc.state.elems.length; i++) {
@@ -36,7 +44,16 @@ struct Grovers {
         }
     }
 
-    int[string] grovers(int delegate(string) f) {
+    /**
+    * The main grovers algorithm which searches for a solution in an unsorted 
+    * search space.
+    *
+    * params:
+    * f = The function which encodes the solution to the search
+    *
+    * returns: An associative array of basis state to number of times measured
+    */
+    int[string] grovers(int function(string) f) {
         for (int i = 0; i < this.num_qubits; i++) {
             this.qc.hadamard(i);
         }
