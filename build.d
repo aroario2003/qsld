@@ -28,6 +28,7 @@ string[] library_files = [
     "quantum/impure_state/decoherence.d",
     "algos/qft.d",
     "algos/deutsch_jozsa.d",
+    "algos/grovers.d",
     "viz/visualization.d"
 ];
 
