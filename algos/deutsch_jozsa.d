@@ -34,11 +34,11 @@ struct DeutschJozsa {
         return bit_str[0];
     }
 
-    /// Implements the oracle gate which affects the quantum state differently based on
-    /// if the function provided is constant and has output 0 or 1, or balanced where their is an 
-    /// equal number of 0's and 1's. When the function is constant such that f(x) = 0 or f(x) = 1, 
-    /// the output will most of the time be all 0 (ideally). If the function is balanced the output
-    /// should be anything but all 0. 
+    // Implements the oracle gate which affects the quantum state differently based on
+    // if the function provided is constant and has output 0 or 1, or balanced where their is an 
+    // equal number of 0's and 1's. When the function is constant such that f(x) = 0 or f(x) = 1, 
+    // the output will most of the time be all 0 (ideally). If the function is balanced the output
+    // should be anything but all 0. 
     private void oracle_gate(int delegate(string) f, string type) {
         string bit_str = format("%0*b", this.num_qubits - 1, cast(int) rand() % (
                 1 << (this.num_qubits - 1)));
@@ -73,8 +73,20 @@ struct DeutschJozsa {
         }
     }
 
-    /// Implements the deutsch-jozsa algorithm for a given fucntion type
-    int[string] deutsch_jozsa(int delegate(string) f, string type) {
+    /**
+    * Implements the deutsch-jozsa algorithm for a given fucntion type
+    * 
+    * params:
+    * f = The function used in the algorithm
+    *
+    * type = The type of function being passed, this is required due to the limitations
+    *        of classical simulation
+    *
+    * shots = The amount of times to run the algorithm (default = 2000)
+    *
+    * returns: An associative array of binary string of basis state to number of times measured
+    */
+    int[string] deutsch_jozsa(int delegate(string) f, string type, int shots = 2000) {
         this.qc.pauli_x(this.num_qubits - 1);
         this.qc.hadamard(this.num_qubits - 1);
 
@@ -88,7 +100,7 @@ struct DeutschJozsa {
             this.qc.hadamard(i);
         }
 
-        int[string] counts = qc.measure_all(2000);
+        int[string] counts = qc.measure_all(shots);
 
         return counts;
     }

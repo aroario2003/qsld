@@ -53,7 +53,7 @@ struct Grovers {
     *
     * returns: An associative array of basis state to number of times measured
     */
-    int[string] grovers(int function(string) f) {
+    int[string] grovers(int function(string) f, int shots = 2000) {
         for (int i = 0; i < this.num_qubits; i++) {
             this.qc.hadamard(i);
         }
@@ -66,6 +66,6 @@ struct Grovers {
             diffusion();
         }
 
-        return this.qc.measure_all(2000);
+        return this.qc.measure_all(shots);
     }
 }

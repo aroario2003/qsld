@@ -29,6 +29,7 @@ string[] library_files = [
     "algos/qft.d",
     "algos/deutsch_jozsa.d",
     "algos/grovers.d",
+    "algos/shors.d",
     "viz/visualization.d"
 ];
 

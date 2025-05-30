@@ -20,8 +20,15 @@ struct QFT {
         this.qc = QuantumCircuit(this.num_qubits, this.initial_state_idx);
     }
 
-    /// The Quantum Fourier Transform or QFT takes n qubits and their computational basis states
-    /// and maps them to superpositions with specific phases which affect the amplitudes
+    this(QuantumCircuit qc) {
+        this.qc = qc;
+        this.num_qubits = this.qc.num_qubits;
+    }
+
+    /** 
+    * The Quantum Fourier Transform or QFT takes n qubits and their computational basis states
+    * and maps them to superpositions with specific phases which affect the amplitudes
+    */
     void qft() {
         for (int i = 0; i < this.num_qubits; i++) {
             for (int j = i + 1; j < this.num_qubits; j++) {
@@ -35,6 +42,9 @@ struct QFT {
         }
     }
 
+    /**
+    * Undoes the operation of the QFT
+    */
     void qft_inverse() {
         for (int i = this.num_qubits - 1; i >= 0; i--) {
             for (int j = 0; j < i; j++) {
