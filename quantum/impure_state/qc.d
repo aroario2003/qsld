@@ -18,6 +18,7 @@ import std.math;
 import std.typecons;
 import std.random;
 import std.format;
+import std.algorithm.iteration;
 import std.range;
 
 // linear algebra modules
@@ -1237,5 +1238,26 @@ struct QuantumCircuit {
                 .initial_state_idx);
         vis.parse_and_write_vis_arr(filename);
         vis.compile_tex_and_cleanup(compiler, filename);
+    }
+
+    /**
+    * Get the approximate state vector up to a global phase from a pure density matrix
+    *
+    * returns: The state vector up to a global phase
+    */
+    Vector!(Complex!real) get_psi() {
+        assert(isClose(this.density_mat.mult_mat(this.density_mat).trace(), 1.0), "The state is not pure, so cannot get state vector");
+
+        Vector!(Complex!real)[] columns = this.density_mat.get_cols();
+        Vector!(Complex!real) result;
+        foreach (col; columns) {
+            if (sum(col.elems).re > 0) {
+                result = col;
+            }
+        }
+
+        real norm = sqrt(result.elems.map!(z => pow(z.abs(), 2)).sum);
+        result.elems = result.elems.map!(z => z / norm).array;
+        return result;
     }
 }

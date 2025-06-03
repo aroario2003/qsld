@@ -1028,4 +1028,13 @@ struct QuantumCircuit {
         vis.parse_and_write_vis_arr(filename);
         vis.compile_tex_and_cleanup(compiler, filename);
     }
+
+    /**
+    * Get the density matrix rho from the current state vector
+    *
+    * returns: The density matrix of the system based on the state vector
+    */
+    Matrix!(Complex!real) get_rho() {
+        return this.state.outer_prod(this.state.dagger());
+    }
 }
