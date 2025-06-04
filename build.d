@@ -23,6 +23,7 @@ string[] library_files = [
     "quantum/pure_state/qc.d",
     "quantum/pure_state/observable.d",
     "quantum/pure_state/decoherence.d",
+    "quantum/pure_state/gate_noise.d",
     "quantum/impure_state/qc.d",
     "quantum/impure_state/observable.d",
     "quantum/impure_state/decoherence.d",
