@@ -9,17 +9,20 @@
 // entanglement information as well as the density matrix. If you would like accurate
 // results with an entangled state, you should use the impure subsystem (quantum/impure_state/).
 
+module quantum.pure_state.gate_noise;
+
 import std.random;
 import std.math;
 import std.conv;
 import std.algorithm.iteration;
+import std.uni;
 
 import std.range : repeat;
 
 import quantum.pure_state.qc;
 
 struct GateNoise {
-    QuantumCircuit qc;
+    QuantumCircuit* qc;
     Random rng;
 
     /**
@@ -29,7 +32,7 @@ struct GateNoise {
     * qc = The QuantumCircuit object being used for simulation so that gate noise can
     *      affect it.
     */
-    this(QuantumCircuit qc) {
+    this(QuantumCircuit* qc) {
         this.qc = qc;
         this.rng = Random(unpredictableSeed);
     }
@@ -117,7 +120,6 @@ struct GateNoise {
             "Please use the single qubit version of the depolarizing_noise function for single qubits");
 
         string[] pauli_combos = generate_pauli_combos(cast(int) qubit_idxs.length);
-
         auto r = uniform(0.0, 1.0f, this.rng);
 
         if (r < probability) {
@@ -157,28 +159,37 @@ struct GateNoise {
     * params:
     * qubit_idx = The index of the qubit acted on by the gate
     *
-    * probability_i_x_y_z = The probabilities of each pauli operator being applied to the qubit,
-    *                       Should add up to 1
+    * probability_map = An associatrive array of operator name to probability of each 
+    *                   pauli operator being applied to the qubit. Operator names should 
+    *                   be capitalized and probabilities should add up to 1.
     */
-    void pauli_noise(int qubit_idx, float[] probability_i_x_y_z) {
-        assert(sum(probability_i_x_y_z) == 1, "The sum of probabilities is not equal to one");
+    void pauli_noise(int qubit_idx, float[string] probability_map) {
+        assert(probability_map.length == 4,
+            "The length of the probability array must be 4");
+
+        assert(isClose(sum(probability_map.values), 1.0f),
+            "The sum of probabilities is not equal to one");
+
+        foreach (key; probability_map.keys) {
+            assert(key == toUpper(key), "The key values are not capitalized, they must be");
+        }
 
         auto r = uniform(0.0, 1.0f, this.rng);
 
         float sum = 0;
-        foreach (i, prob; probability_i_x_y_z) {
+        foreach (op, prob; probability_map) {
             sum += prob;
             if (r < sum) {
-                switch (i) {
-                case 0:
+                switch (op) {
+                case "I":
                     break;
-                case 1:
+                case "X":
                     this.qc.pauli_x(qubit_idx);
                     break;
-                case 2:
+                case "Y":
                     this.qc.pauli_y(qubit_idx);
                     break;
-                case 3:
+                case "Z":
                     this.qc.pauli_z(qubit_idx);
                     break;
                 default:
@@ -194,17 +205,24 @@ struct GateNoise {
     * Apply pauli noise to qubits acted on by a multi-qubit gate
     *
     * params:
-    * qubit_idx = The indices of the qubits acted on by the gate
+    * qubit_idxs = The indices of the qubits acted on by the gate
     *
     * probability_map = The probabilities of each pauli operator combination being applied to the qubits 
-                        as an associative array, Should add up to 1
+    *                   as an associative array, Should add up to 1
     */
     void pauli_noise(int[] qubit_idxs, float[string] probability_map) {
         assert(probability_map.length == pow(4, qubit_idxs.length),
             "The length of the probability map for combinations of pauli operator combinations should be the same as 4 to the number of qubits affected");
 
-        assert(sum(probability_map.values) == 1,
+        assert(isClose(sum(probability_map.values), 1.0f),
             "The sum of the probabilities in the probability map of pauli operator combinations should sum to 1, it does not");
+
+        assert(qubit_idxs.length > 1,
+            "Please use the single qubit version of the pauli_noise function for single qubits");
+
+        foreach (key; probability_map.keys) {
+            assert(key == toUpper(key), "The key values are not capitalized, they must be");
+        }
 
         auto r = uniform(0.0, 1.0f, this.rng);
 
@@ -255,11 +273,14 @@ struct GateNoise {
     * Apply bit flip noise qubits acted on by a multi-qubit gate with some probabilities.
     *
     * params:
-    * qubit_idx = The indices of the qubits acted on by the gate to apply noise to
+    * qubit_idxs = The indices of the qubits acted on by the gate to apply noise to
     * 
     * probabilities = The probabilities that the qubits are flipped. These do not need to sum to 1
     */
     void bit_flip_noise(int[] qubit_idxs, float[] probabilities) {
+        assert(qubit_idxs.length > 1 && probabilities.length > 1,
+            "Please use the single qubit version of the bit_flip_noise function for single qubits");
+
         assert(qubit_idxs.length == probabilities.length,
             "The two arrays passed must have equal length");
 
@@ -297,6 +318,9 @@ struct GateNoise {
     *                 These do not need to sum to 1.
     */
     void phase_flip_noise(int[] qubit_idxs, float[] probabilities) {
+        assert(qubit_idxs.length > 1 && probabilities.length > 1,
+            "Please use the single qubit version of the phase_flip_noise function for single qubits");
+
         assert(qubit_idxs.length == probabilities.length,
             "The two arrays passed must have equal length");
 
@@ -334,6 +358,9 @@ struct GateNoise {
     *                 These do not need to sum to 1.
     */
     void bit_phase_flip_noise(int[] qubit_idxs, float[] probabilities) {
+        assert(qubit_idxs.length > 1 && probabilities.length > 1,
+            "Please use the single qubit version of the bit_phase_flip_noise function for single qubits");
+
         assert(qubit_idxs.length == probabilities.length,
             "The two arrays passed must have equal length");
 

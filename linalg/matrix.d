@@ -290,3 +290,27 @@ struct Matrix(T) {
     }
 
 }
+
+// NOTE: It doesn't make sense to have to declare a Matrix instance when
+// calling this function:
+
+/**
+ * Makes a square matrix with all zeros as elements
+ * 
+ * params:
+ * size = The size of the square matrix
+ *
+ * returns: The matrix with all zeros
+*/
+Matrix!(Complex!real) zeros(int size) {
+    Matrix!(Complex!real) result = Matrix!(Complex!real)(size, size, []);
+    for (int i = 0; i < size; i++) {
+        Vector!(Complex!real) row = Vector!(Complex!real)(size, []);
+        for (int j = 0; j < size; j++) {
+            row.append(Complex!real(0, 0));
+        }
+        result.append(row);
+        row.clear();
+    }
+    return result;
+}

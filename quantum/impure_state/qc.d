@@ -182,15 +182,15 @@ struct QuantumCircuit {
     }
 
     // Builds the full gate for single qubit gates
-    private Matrix!(Complex!real) build_full_gate(Matrix!(Complex!real) gate_matrix, int qubit_idx) {
+    package Matrix!(Complex!real) build_full_gate(Matrix!(Complex!real) gate_matrix, int qubit_idx) {
         Matrix!(Complex!real) identity = Matrix!(Complex!real)(2, 2, []).identity(2);
         Matrix!(Complex!real)[] kronecker_chain;
 
         for (int i = this.num_qubits - 1; i >= 0; i--) {
             if (i == qubit_idx) {
-                kronecker_chain[kronecker_chain.length++] = gate_matrix;
+                kronecker_chain ~= gate_matrix;
             } else {
-                kronecker_chain[kronecker_chain.length++] = identity;
+                kronecker_chain ~= identity;
             }
         }
 
