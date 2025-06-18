@@ -32,7 +32,8 @@ string[] library_files = [
     "algos/deutsch_jozsa.d",
     "algos/grovers.d",
     "algos/shors.d",
-    "viz/visualization.d"
+    "viz/visualization.d",
+    "qml/qnn.d"
 ];
 
 void compile(string[] compile_cmd, bool library = true, string example_name = "") {
@@ -139,6 +140,7 @@ void main(string[] args) {
             "-of=" ~ bin_name_path,
             src_name_path,
         ];
+
         if (!src_name_path.exists) {
             writeln("The example source file with the name ", src_name_path, " does not exist...skipping");
             continue;
