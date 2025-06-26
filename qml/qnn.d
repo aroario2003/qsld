@@ -1,8 +1,13 @@
-// NOTE: This is a basic API for building Quantum Neural Networks. Currently this is extremely limited,
-// their will be more stuff added later but for now it basically only supports binary classifiers.
+// NOTE: This is a basic API for building Quantum Neural Networks. This is quite limited,
+// this really only supports making binary classifiers, however, it is possible to make 
+// a multi-class classifier with teh one vs rest approach with an average of ~82% accuracy.
+// I will not be adding multi-class classifiers as they do not do well in general and mostly
+// get a range of ~75%-105% loss and ~44% accuracy.
 
 import std.math;
 import std.stdio;
+
+import std.typecons : Tuple;
 
 import quantum.pure_state.qc;
 
@@ -19,14 +24,21 @@ struct QnnConfig {
 }
 
 // The structure used to represent a singular piece of training data
-struct TrainElement {
+struct DataElement {
     real[] input;
     real label;
 }
 
 struct Qnn {
     QnnConfig conf;
+    QuantumCircuit qc;
 
+    /**
+    * Constructor for the QNN
+    *
+    * params:
+    * conf = The QnnConfig to specify parameters to use for the QNN
+    */
     this(QnnConfig conf) {
         this.conf = conf;
     }
@@ -78,24 +90,34 @@ struct Qnn {
         return result_diff;
     }
 
+    // normalizes, encodes and runs the inputs through the VQC
+    private Tuple!(real[], real) forward(real[] input) {
+        real[] normalized = this.conf.norm_func(input);
+        normalized = convert_norms_to_angles(normalized);
+        this.conf.encode(this.qc, normalized);
+        real result = this.conf.vqc(this.qc, this.conf.trainable_params);
+
+        return Tuple!(real[], real)(normalized, result);
+    }
+
     /**
     * Train the QNN on the dataset provided as an array
     *
     * params:
     * train_data = The data to train the QNN on
     */
-    void train(TrainElement[] train_data) {
+    void train(DataElement[] train_data) {
         foreach (epoch; 1 .. this.conf.epochs) {
             real correct = 0;
             foreach (sample; train_data) {
-                QuantumCircuit qc = QuantumCircuit(this.conf.num_qubits);
+                this.qc = QuantumCircuit(this.conf.num_qubits);
 
-                real[] normalized = this.conf.norm_func(sample.input);
-                normalized = convert_norms_to_angles(normalized);
-                this.conf.encode(qc, normalized);
+                Tuple!(real[], real) data = forward(sample.input);
+                real[] normalized = data[0];
+                real result = data[1];
 
-                real result = this.conf.vqc(qc, this.conf.trainable_params);
                 real prediction = tanh(result);
+                // TODO; Allow for use of binary cross-entropy loss
                 real loss = mean_squared_error(prediction, sample.label);
 
                 real pred = 0;
@@ -123,5 +145,22 @@ struct Qnn {
             real accuracy = correct / cast(real) train_data.length;
             writefln("Epoch %s | Accuracy: %.4f", epoch, accuracy);
         }
+    }
+
+    /**
+    * Give a prediction for a specific piece of data
+    *
+    * params:
+    * elem = The piece of data for which to generate the prediction
+    *
+    * returns: A real number representing whether or not the data is in a 
+    * specific class or not. In general, the interpretation of the results
+    * of this function will vary based on the problem.
+    */
+    real predict(DataElement elem) {
+        Tuple!(real[], real) data = forward(elem.input);
+        real result = data[1];
+        real prediction = tanh(result);
+        return prediction;
     }
 }
