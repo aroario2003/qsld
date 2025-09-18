@@ -33,7 +33,8 @@ string[] library_files = [
     "algos/grovers.d",
     "algos/shors.d",
     "viz/visualization.d",
-    "qml/qnn.d"
+    "qml/qnn.d",
+    "qec/stabilizer.d"
 ];
 
 void compile(string[] compile_cmd, bool library = true, string example_name = "") {
