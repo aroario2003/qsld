@@ -29,6 +29,9 @@ import linalg.vector;
 import quantum.pure_state.observable;
 import quantum.pure_state.decoherence;
 
+// qec related module(s)
+import qec.stabilizer;
+
 // visualization related modules
 import viz.visualization;
 
@@ -37,6 +40,11 @@ struct QuantumCircuit {
     int num_qubits;
     Vector!(Complex!real) state;
     int initial_state_idx;
+
+    // These are quantum error correction
+    Tableau tableau;
+    Vector!int error;
+    QecConfig qec_conf;
 
     // These are for circuit visualization
     int timestep;
@@ -65,6 +73,8 @@ struct QuantumCircuit {
         this.state = Vector!(Complex!real)(num_probabilities, state_arr);
         this.timestep = 0;
 
+        this.qec_conf = QecConfig("none");
+
         this.decoherence_conf = DecoherenceConfig(Nullable!T1Decay.init, Nullable!T2Decay.init, "none");
     }
 
@@ -91,6 +101,8 @@ struct QuantumCircuit {
         this.state = Vector!(Complex!real)(num_probabilities, state_arr);
         this.timestep = 0;
 
+        this.qec_conf = QecConfig("none");
+
         this.decoherence_conf = DecoherenceConfig(Nullable!T1Decay.init, Nullable!T2Decay.init, "none");
     }
 
@@ -116,6 +128,8 @@ struct QuantumCircuit {
 
         this.state = Vector!(Complex!real)(num_probabilities, state_arr);
         this.timestep = 0;
+
+        this.qec_conf = QecConfig("none");
 
         this.decoherence_conf = decoherence_conf;
     }
@@ -146,7 +160,74 @@ struct QuantumCircuit {
         this.state = Vector!(Complex!real)(num_probabilities, state_arr);
         this.timestep = 0;
 
+        this.qec_conf = QecConfig("none");
+
         this.decoherence_conf = decoherence_conf;
+    }
+
+    /**
+    * Overload of the constructor for quantum circuit object
+    * 
+    * params: 
+    * num_qubits = The number of qubits for the circuit to have
+    */
+    this(int num_qubits, QecConfig conf) {
+        this.num_qubits = num_qubits;
+        this.initial_state_idx = 0;
+
+        int num_probabilities = pow(2, this.num_qubits);
+        Complex!real[] state_arr = new Complex!real[num_probabilities];
+        //initialize state vector to all 0+0i amplitudes
+        state_arr[] = Complex!real(0, 0);
+        // start with a valid classical state by setting one of the amplitudes probabilities to 100%
+        state_arr[0] = Complex!real(1, 0);
+
+        this.state = Vector!(Complex!real)(num_probabilities, state_arr);
+        this.timestep = 0;
+
+        this.qec_conf = conf;
+
+        this.tableau = Tableau(&this, this.num_qubits);
+
+        int[] error_arr = new int[2 * this.num_qubits];
+        error_arr[] = 0;
+        this.error = Vector!int(2 * this.num_qubits, error_arr);
+
+        this.decoherence_conf = DecoherenceConfig(Nullable!T1Decay.init, Nullable!T2Decay.init, "none");
+    }
+
+    /**
+    * Overload of the constructor for the quantum circuit object (pure subsystem)
+    *
+    * params:
+    * num_qubits = The number of qubits for the circuit to have
+    *
+    * starting_state_idx = The index in the state vector of the amplitude to have 100% 
+    *                      probability when starting out
+    */
+    this(int num_qubits, int starting_state_idx, QecConfig conf) {
+        this.num_qubits = num_qubits;
+        this.initial_state_idx = starting_state_idx;
+
+        int num_probabilities = pow(2, this.num_qubits);
+        Complex!real[] state_arr = new Complex!real[num_probabilities];
+        //initialize state vector to all 0+0i amplitudes
+        state_arr[] = Complex!real(0, 0);
+        // start with a valid classical state by setting one of the amplitudes probabilities to 100%
+        state_arr[starting_state_idx] = Complex!real(1, 0);
+
+        this.state = Vector!(Complex!real)(num_probabilities, state_arr);
+        this.timestep = 0;
+
+        this.qec_conf = conf;
+
+        this.tableau = Tableau(&this, this.num_qubits);
+
+        int[] error_arr = new int[2 * this.num_qubits];
+        error_arr[] = 0;
+        this.error = Vector!int(2 * this.num_qubits, error_arr);
+
+        this.decoherence_conf = DecoherenceConfig(Nullable!T1Decay.init, Nullable!T2Decay.init, "none");
     }
 
     // Updates the visualization internal representation 
@@ -154,6 +235,48 @@ struct QuantumCircuit {
         this.visualization_arr[this.visualization_arr.length++] = tuple(gate_name, qubit_idxs, this
                 .timestep);
         this.timestep += 1;
+    }
+
+    // Update the tableau when quantum error correction is active.
+    // This is only for single qubit gates, multi-qubit require call
+    // to overload.
+    private void update_tableau(string gate_name, int qubit_idx) {
+        if (this.qec_conf.qec_mode == "automatic") {
+            switch (gate_name) {
+            case "H":
+                this.tableau.update_hadamard(qubit_idx);
+                break;
+            case "X":
+                this.tableau.update_pauli_x(qubit_idx);
+                break;
+            case "Y":
+                this.tableau.update_pauli_y(qubit_idx);
+                break;
+            case "Z":
+                this.tableau.update_pauli_z(qubit_idx);
+                break;
+            case "S":
+                this.tableau.update_s(qubit_idx);
+                break;
+            default:
+                assert(false, "The gate name is invalid for tableau update (single qubit)");
+            }
+        }
+    }
+
+    // Update the tableau when quantum error correction is active.
+    // This is oly for multi-qubit gates, for single qubit use the 
+    // original function (This is an overload).
+    private void update_tableau(string gate_name, int[] qubit_idxs) {
+        if (this.qec_conf.qec_mode == "automatic") {
+            switch (gate_name) {
+            case "CX":
+                this.tableau.update_cnot(qubit_idxs[0], qubit_idxs[1]);
+                break;
+            default:
+                assert(false, "The gate name is invalid for tableau update (multi-qubit)");
+            }
+        }
     }
 
     // Apply T1, T2 decay or both depending on the specification of 

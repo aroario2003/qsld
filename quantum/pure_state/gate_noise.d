@@ -89,12 +89,16 @@ struct GateNoise {
                     switch (gate) {
                     case "X":
                         this.qc.pauli_x(qubit_idx);
+                        this.qc.error.elems[qubit_idx] ^= 1;
                         break;
                     case "Y":
                         this.qc.pauli_y(qubit_idx);
+                        this.qc.error.elems[qubit_idx] ^= 1;
+                        this.qc.error.elems[this.qc.num_qubits + qubit_idx] ^= 1;
                         break;
                     case "Z":
                         this.qc.pauli_z(qubit_idx);
+                        this.qc.error.elems[this.qc.num_qubits + qubit_idx] ^= 1;
                         break;
                     default:
                         assert(false, "Invalid gate chosen for depolarizing noise");
@@ -135,13 +139,17 @@ struct GateNoise {
                         case 'I':
                             continue;
                         case 'X':
-                            this.qc.pauli_x(cast(int) i);
+                            this.qc.pauli_x(qubit_idxs[i]);
+                            this.qc.error.elems[qubit_idxs[i]] ^= 1;
                             break;
                         case 'Y':
-                            this.qc.pauli_y(cast(int) i);
+                            this.qc.pauli_y(qubit_idxs[i]);
+                            this.qc.error.elems[qubit_idxs[i]] ^= 1;
+                            this.qc.error.elems[this.qc.num_qubits + qubit_idxs[i]] ^= 1;
                             break;
                         case 'Z':
-                            this.qc.pauli_z(cast(int) i);
+                            this.qc.pauli_z(qubit_idxs[i]);
+                            this.qc.error.elems[this.qc.num_qubits + qubit_idxs[i]] ^= 1;
                             break;
                         default:
                             assert(false, "Invalid gate encoutered while parsing pauli operator combinations");
@@ -185,12 +193,16 @@ struct GateNoise {
                     break;
                 case "X":
                     this.qc.pauli_x(qubit_idx);
+                    this.qc.error.elems[qubit_idx] ^= 1;
                     break;
                 case "Y":
                     this.qc.pauli_y(qubit_idx);
+                    this.qc.error.elems[qubit_idx] ^= 1;
+                    this.qc.error.elems[this.qc.num_qubits + qubit_idx] ^= 1;
                     break;
                 case "Z":
                     this.qc.pauli_z(qubit_idx);
+                    this.qc.error.elems[this.qc.num_qubits + qubit_idx] ^= 1;
                     break;
                 default:
                     assert(false, "Invalid gate for pauli error noise");
@@ -236,13 +248,17 @@ struct GateNoise {
                     case 'I':
                         break;
                     case 'X':
-                        this.qc.pauli_x(cast(int) i);
+                        this.qc.pauli_x(qubit_idxs[i]);
+                        this.qc.error.elems[qubit_idxs[i]] ^= 1;
                         break;
                     case 'Y':
-                        this.qc.pauli_y(cast(int) i);
+                        this.qc.pauli_y(qubit_idxs[i]);
+                        this.qc.error.elems[qubit_idxs[i]] ^= 1;
+                        this.qc.error.elems[this.qc.num_qubits + qubit_idxs[i]] ^= 1;
                         break;
                     case 'Z':
-                        this.qc.pauli_z(cast(int) i);
+                        this.qc.pauli_z(qubit_idxs[i]);
+                        this.qc.error.elems[this.qc.num_qubits + qubit_idxs[i]] ^= 1;
                         break;
                     default:
                         assert(false, "Invalid gate encoutered when parsing pauli operator combination");
@@ -266,6 +282,7 @@ struct GateNoise {
 
         if (r < probability) {
             this.qc.pauli_x(qubit_idx);
+            this.qc.error.elems[qubit_idx] ^= 1;
         }
     }
 
@@ -288,6 +305,7 @@ struct GateNoise {
             auto r = uniform(0.0, 1.0f, this.rng);
             if (r < probabilities[i]) {
                 this.qc.pauli_x(qubit_idx);
+                this.qc.error.elems[qubit_idxs[i]] ^= 1;
             }
         }
     }
@@ -305,6 +323,7 @@ struct GateNoise {
 
         if (r < probability) {
             this.qc.pauli_z(qubit_idx);
+            this.qc.error.elems[this.qc.num_qubits + qubit_idx] ^= 1;
         }
     }
 
@@ -328,6 +347,7 @@ struct GateNoise {
             auto r = uniform(0.0, 1.0f, this.rng);
             if (r < probabilities[i]) {
                 this.qc.pauli_z(qubit_idx);
+                this.qc.error.elems[this.qc.num_qubits + qubit_idxs[i]] ^= 1;
             }
         }
     }
@@ -345,6 +365,8 @@ struct GateNoise {
 
         if (r < probability) {
             this.qc.pauli_y(qubit_idx);
+            this.qc.error.elems[qubit_idx] ^= 1;
+            this.qc.error.elems[this.qc.num_qubits + qubit_idx] ^= 1;
         }
     }
 
@@ -368,6 +390,8 @@ struct GateNoise {
             auto r = uniform(0.0, 1.0f, this.rng);
             if (r < probabilities[i]) {
                 this.qc.pauli_y(qubit_idx);
+                this.qc.error.elems[qubit_idxs[i]] ^= 1;
+                this.qc.error.elems[this.qc.num_qubits + qubit_idxs[i]] ^= 1;
             }
         }
     }

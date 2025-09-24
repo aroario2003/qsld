@@ -3,16 +3,34 @@
 // using this subsystem please only use the pure subsystem of QSLD.
 // WARNING: This is currently a work in progress, do not use
 
+module qec.stabilizer;
+
 import quantum.pure_state.qc;
 
 import linalg.vector;
 import linalg.matrix;
 
 struct QecConfig {
+    string qec_mode;
+
+    /**
+     * The constructor for the Quantum Error Correction config structure 
+     * 
+     * params:
+     * mode = The way to apply the error correction, "manual" means you do it yourself,
+     *        "automatic" means the simulator will do it for you, "none" means no error 
+     *        correction.
+     */
+    this(string mode) {
+        assert(mode == "manual" || mode == "automatic" || mode == "none",
+            "The mode specified for qec is invalid");
+
+        this.qec_mode = mode;
+    }
 }
 
 struct Tableau {
-    QuantumCircuit qc;
+    QuantumCircuit* qc;
     int num_qubits;
     Matrix!int tableau_internal;
 
@@ -22,10 +40,9 @@ struct Tableau {
     * diagnoses the syndrome based on the binary values.
     *
     * params:
-    * qc = The quantum circuit which contains the quantum state.
     * num_qubits = The number of qubits in the quantum system.
     */
-    this(QuantumCircuit qc, int num_qubits) {
+    this(QuantumCircuit* qc, int num_qubits) {
         this.qc = qc;
         this.num_qubits = num_qubits;
 
@@ -269,18 +286,18 @@ struct Tableau {
      * 
      * returns: The vector of syndrome bits which represent the error
      */
-    Vector!int measure(Vector!int error) {
+    Vector!int measure() {
         Matrix!int stabilizers = gaussian_elimination();
         Vector!int syndrome_bits;
-        foreach (stabilizer; stabilizers) {
+        foreach (stabilizer; stabilizers.rows) {
             int[] x_bits_s = stabilizer.elems[0 .. this.num_qubits];
             int[] z_bits_s = stabilizer.elems[this.num_qubits .. 2 * this.num_qubits];
 
-            int[] x_bits_e = error.elems[0 .. this.num_qubits];
-            int[] z_bits_e = error.elems[this.num_qubits .. 2 * this.num_qubits];
+            int[] x_bits_e = this.qc.error.elems[0 .. this.num_qubits];
+            int[] z_bits_e = this.qc.error.elems[this.num_qubits .. 2 * this.num_qubits];
 
             int sum = 0;
-            for (int bit_idx = 0; bit_idx < x_bits_v.length(); bit_idx++) {
+            for (int bit_idx = 0; bit_idx < this.num_qubits; bit_idx++) {
                 int result1 = x_bits_s[bit_idx] * z_bits_e[bit_idx];
                 int result2 = x_bits_e[bit_idx] * z_bits_s[bit_idx];
 
@@ -292,5 +309,54 @@ struct Tableau {
         }
 
         return syndrome_bits;
+    }
+
+    /*
+     *--------------------------------------------------------------------------------
+     * NOTE: The functions below propogate the errors applied to qubits when certain gates
+     * are applied to the quantum state. These functions update the error vector not the
+     * tableau object. The pauli operators are not present due to the fact that they commute
+     * with themselves.
+     *--------------------------------------------------------------------------------
+     */
+
+    /**
+     * Propogate the error on a qubit if the qubit at the specified index (qubit_idx) 
+     * already has an error applied to it. Used for the hadamard gate.
+     *
+     * params:
+     * qubit_idx = The index of the qubit to propogate the error of, if it exists
+     */
+    void propogate_hadamard(int qubit_idx) {
+        int temp = this.qc.error[qubit_idx];
+        this.qc.error[qubit_idx] = this.qc.error[this.num_qubits + qubit_idx];
+        this.qc.error[this.num_qubits + qubit_idx] = temp;
+    }
+
+    /**
+     * Propogate the error on a qubit if the qubit at the specified index (qubit_idx)
+     * already has an error applied to it. Used for the s gate.
+     *
+     * params:
+     * qubit_idx = The index of the qubit to propogate the error of, if it exists
+     */
+    void propogate_s(int qubit_idx) {
+        this.qc.error[this.num_qubits + qubit_idx] = this.qc.error[this.num_qubits + qubit_idx] ^ this
+            .qc.error[qubit_idx];
+    }
+
+    /**
+     * Propogate the error on a qubit if the qubit at the specified index (qubit_idx)
+     * already has an error applied to it. Used for the controlled not gate.
+     *
+     * params:
+     * control_qubit_idx = The index of the control qubit to propogate the error of, if it exists
+     * target_qubit_idx = The index of the target qubit to propogate the error of, if it exists
+     */
+    void propogate_cnot(int control_qubit_idx, int target_qubit_idx) {
+        this.qc.error[target_qubit_idx] = this.qc.error[target_qubit_idx] ^ this
+            .qc.error[control_qubit_idx];
+        this.qc.error[this.num_qubits + control_qubit_idx] = this.qc.error[this.num_qubits + control_qubit_idx] ^ this
+            .qc.error[this.num_qubits + target_qubit_idx];
     }
 }
