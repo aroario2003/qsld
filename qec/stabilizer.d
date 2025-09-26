@@ -244,7 +244,7 @@ struct Tableau {
         Matrix!int independent_rows;
 
         for (ulong col_idx = 0; col_idx <= row_len; col_idx++) {
-            for (ulong i = this.num_qubits; i <= 2 * this.num_qubits; i++) {
+            for (ulong i = this.num_qubits; i < 2 * this.num_qubits; i++) {
                 Vector!int row = this.tableau_internal.rows[i];
 
                 if (row[col_idx] == 1) {
@@ -260,7 +260,7 @@ struct Tableau {
             }
 
             if (pivot_found) {
-                for (int i = this.num_qubits; i <= 2 * this.num_qubits; i++) {
+                for (int i = this.num_qubits; i < 2 * this.num_qubits; i++) {
                     Vector!int row = this.tableau_internal.rows[i];
                     if (i != (this.num_qubits + r)) {
                         if (row[col_idx] == 1) {

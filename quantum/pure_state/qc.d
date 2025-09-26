@@ -170,6 +170,7 @@ struct QuantumCircuit {
     * 
     * params: 
     * num_qubits = The number of qubits for the circuit to have
+    * conf = The config which specifies how to keep track of quantum error correction
     */
     this(int num_qubits, QecConfig conf) {
         this.num_qubits = num_qubits;
@@ -201,9 +202,9 @@ struct QuantumCircuit {
     *
     * params:
     * num_qubits = The number of qubits for the circuit to have
-    *
     * starting_state_idx = The index in the state vector of the amplitude to have 100% 
     *                      probability when starting out
+    * conf = The config which specifies how to keep track of quantum error correction
     */
     this(int num_qubits, int starting_state_idx, QecConfig conf) {
         this.num_qubits = num_qubits;
@@ -259,7 +260,7 @@ struct QuantumCircuit {
                 this.tableau.update_s(qubit_idx);
                 break;
             default:
-                assert(false, "The gate name is invalid for tableau update (single qubit)");
+                assert(false, "The gate name is invalid or the gate is not compatible with the tableau");
             }
         }
     }
@@ -274,7 +275,7 @@ struct QuantumCircuit {
                 this.tableau.update_cnot(qubit_idxs[0], qubit_idxs[1]);
                 break;
             default:
-                assert(false, "The gate name is invalid for tableau update (multi-qubit)");
+                assert(false, "The gate name is invalid or the gate is not compatible with the tableau");
             }
         }
     }
@@ -340,6 +341,15 @@ struct QuantumCircuit {
 
             this.state[cast(ulong) vec[0]] = updated_amplitudes[0];
             this.state[cast(ulong) vec[1]] = updated_amplitudes[1];
+        }
+
+        // This will only happen if QecConfig.qec_mode is set to automatic
+        update_tableau("H", qubit_idx);
+
+        if (this.qec_conf.qec_mode == "automatic") {
+            if (this.error[qubit_idx] == 1 || this.error[this.num_qubits + qubit_idx] == 1) {
+                this.tableau.propogate_hadamard(qubit_idx);
+            }
         }
 
         // This will only happen if DecoherenceConfig.decoherence_mode is
@@ -438,6 +448,9 @@ struct QuantumCircuit {
             this.state[vec[1]] = temp;
         }
 
+        // This will only happen if QecConfig.qec_mode is set to automatic
+        update_tableau("X", qubit_idx);
+
         // This will only happen if DecoherenceConfig.decoherence_mode is
         // set to automatic
         apply_decoherence(qubit_idx, 20);
@@ -477,6 +490,9 @@ struct QuantumCircuit {
             }
         }
 
+        // This will only happen if QecConfig.qec_mode is set to automatic
+        update_tableau("Y", qubit_idx);
+
         // This will only happen if DecoherenceConfig.decoherence_mode is
         // set to automatic
         apply_decoherence(qubit_idx, 20);
@@ -510,6 +526,9 @@ struct QuantumCircuit {
                 this.state[i] = this.state[i] * Complex!real(-1, 0);
             }
         }
+
+        // This will only happen if QecConfig.qec_mode is set to automatic
+        update_tableau("Z", qubit_idx);
 
         // This will only happen if DecoherenceConfig.decoherence_mode is
         // set to automatic
@@ -556,6 +575,16 @@ struct QuantumCircuit {
             }
         }
 
+        // This will only happen if QecConfig.qec_mode is set to automatic
+        update_tableau("CX", [control_qubit_idx, target_qubit_idx]);
+
+        if (this.qec_conf.qec_mode == "automatic") {
+            if (this.error[control_qubit_idx] == 1 || this.error[this.num_qubits + control_qubit_idx] == 1
+                || this.error[target_qubit_idx] == 1 || this.error[this.num_qubits + target_qubit_idx] == 1) {
+                this.tableau.propogate_cnot(control_qubit_idx, target_qubit_idx);
+            }
+        }
+
         // This will only happen if DecoherenceConfig.decoherence_mode is
         // set to automatic
         apply_decoherence(control_qubit_idx, 100);
@@ -590,6 +619,15 @@ struct QuantumCircuit {
             bool qubit_is_one = (i & (1 << qubit_idx)) != 0;
             if (qubit_is_one) {
                 this.state[i] = this.state[i] * Complex!real(0, 1);
+            }
+        }
+
+        // This will only happen if QecConfig.qec_mode is set to automatic
+        update_tableau("S", qubit_idx);
+
+        if (this.qec_conf.qec_mode == "automatic") {
+            if (this.error[qubit_idx] == 1 || this.error[this.num_qubits + qubit_idx] == 1) {
+                this.tableau.propogate_s(qubit_idx);
             }
         }
 
