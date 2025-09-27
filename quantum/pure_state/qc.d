@@ -266,13 +266,17 @@ struct QuantumCircuit {
     }
 
     // Update the tableau when quantum error correction is active.
-    // This is oly for multi-qubit gates, for single qubit use the 
-    // original function (This is an overload).
+    // This is only for multi-qubit gates, for single qubit use the 
+    // original function (This is an overload). Make sure control qubit
+    // comes first and target qubit comes second in the qubit_idxs parameter
     private void update_tableau(string gate_name, int[] qubit_idxs) {
         if (this.qec_conf.qec_mode == "automatic") {
             switch (gate_name) {
             case "CX":
                 this.tableau.update_cnot(qubit_idxs[0], qubit_idxs[1]);
+                break;
+            case "CZ":
+                this.tableau.update_cz(qubit_idxs[0], qubit_idxs[1]);
                 break;
             default:
                 assert(false, "The gate name is invalid or the gate is not compatible with the tableau");
@@ -704,6 +708,18 @@ struct QuantumCircuit {
             bool tgt_qubit_is_one = (i & (1 << target_qubit_idx)) != 0;
             if (cntl_qubit_is_one && tgt_qubit_is_one) {
                 this.state[i] = this.state[i] * Complex!real(-1, 0);
+            }
+        }
+
+        // This will only happen if QecConfig.qec_mode is set to automatic
+        update_tableau("CZ", [control_qubit_idx, target_qubit_idx]);
+
+        if (this.qec_conf.qec_mode == "automatic") {
+            if (this.error[control_qubit_idx] == 1 || this.error[target_qubit_idx] == 1 ||
+                this.error[this.num_qubits + control_qubit_idx] == 1 || this
+                .error[this.num_qubits + target_qubit_idx] == 1) {
+
+                this.tableau.propogate_cz(control_qubit_idx, target_qubit_idx);
             }
         }
 

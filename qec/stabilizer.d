@@ -232,6 +232,22 @@ struct Tableau {
         }
     }
 
+    /**
+     * Updates the tableay when the cz gate is applied by xoring 
+     * the z control and target bits together to get new values if 
+     * applicable
+     *
+     * params:
+     * control_qubit_idx = The index of the control qubit to update
+     * target_qubit_idx = The index of the target qubit to update
+    */
+    void update_cz(int control_qubit_idx, int target_qubit_idx) {
+        foreach (row; this.tableau_internal.rows) {
+            row[this.num_qubits + control_qubit_idx] = row[this.num_qubits + control_qubit_idx] ^ row[target_qubit_idx];
+            row[this.num_qubits + target_qubit_idx] = row[this.num_qubits + target_qubit_idx] ^ row[control_qubit_idx];
+        }
+    }
+
     // Used to put the tableau matrix into upper echelon form
     // and find independent stabilizers used to correct the state
     private Matrix!int gaussian_elimination() {
@@ -346,7 +362,7 @@ struct Tableau {
     }
 
     /**
-     * Propogate the error on a qubit if the qubit at the specified index (qubit_idx)
+     * Propogate the error on a qubit if the qubit at the specified index (control_qubit_idx or target_qubit_idx)
      * already has an error applied to it. Used for the controlled not gate.
      *
      * params:
@@ -358,5 +374,23 @@ struct Tableau {
             .qc.error[control_qubit_idx];
         this.qc.error[this.num_qubits + control_qubit_idx] = this.qc.error[this.num_qubits + control_qubit_idx] ^ this
             .qc.error[this.num_qubits + target_qubit_idx];
+    }
+
+    /**
+     * Propogate the error on a qubit if the qubit at the specified index (control_qubit_idx or target_qubit_idx)
+     * already has an error applied to it. Used for the controlled z gate.
+     *
+     * params:
+     * control_qubit_idx = The index of the control qubit to propogate the error of, if it exists
+     * target_qubit_idx = The index of the target qubit to propogate the error of, if it exists
+     */
+    void propogate_cz(int control_qubit_idx, int target_qubit_idx) {
+        this.qc.error[this.num_qubits + control_qubit_idx] = this.qc
+            .error[this.num_qubits = control_qubit_idx] ^ this
+            .qc.error[target_qubit_idx];
+
+        this.qc.error[this.num_qubits + target_qubit_idx] = this.qc
+            .error[this.num_qubits + target_qubit_idx] ^ this
+            .qc.error[control_qubit_idx];
     }
 }
