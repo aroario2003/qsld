@@ -1240,6 +1240,89 @@ struct QuantumCircuit {
         vis.compile_tex_and_cleanup(compiler, filename);
     }
 
+    // Approximate the relative phase given as a 
+    // floating point number q, as a fraction
+    private string find_phase_frac(float q) {
+        real n = 0;
+        real d = 1;
+
+        real[] frac_coeff_list;
+        frac_coeff_list ~= floor(q);
+
+        real[] numerator_list = [1, frac_coeff_list[0]];
+        real[] denominator_list = [0, 1];
+
+        real denominator_max = 128;
+        real tolerance = 1e-12;
+
+        int iteration = 2;
+        while (true) {
+            real frac_part = q - floor(q);
+
+            if (abs(frac_part) < tolerance)
+                break;
+
+            real r = 1.0 / frac_part;
+            frac_coeff_list ~= floor(r);
+
+            real numerator = frac_coeff_list[iteration - 1] * numerator_list[iteration - 1] + numerator_list[iteration - 2];
+            real denominator = frac_coeff_list[iteration - 1] * denominator_list[iteration - 1] + denominator_list[iteration - 2];
+            numerator_list ~= numerator;
+            denominator_list ~= denominator;
+
+            if (denominator_list[$ - 1] > denominator_max ||
+                abs(q - numerator_list[$ - 1] / denominator_list[$ - 1]) < tolerance) {
+
+                n = numerator_list[$ - 1];
+                d = denominator_list[$ - 1];
+                break;
+            }
+
+            iteration++;
+        }
+
+        int ni = cast(int) n;
+        int di = cast(int) d;
+
+        if (ni == 0)
+            return "0";
+
+        if (di == 1)
+            return format("%d * Pi", ni);
+
+        return format("%d * Pi/%d", ni, di);
+    }
+
+    /**
+     * Get the relative phase of the state approximated as a fraction
+     *
+     * returns: A 2D array of relative phases corresponding to each off 
+     *          diagonal element in the density matrix
+     */
+    string[][] get_rel_phase() {
+        string[][] rel_phases;
+        rel_phases.length = this.density_mat.rows.length;
+
+        foreach (i, row; this.density_mat.rows) {
+            rel_phases[i].length = row.elems.length;
+            foreach (j, elem; row.elems) {
+                if (i == j) {
+                    rel_phases[i][j] = "";
+                    continue;
+                }
+
+                if (elem.re == 0 && elem.im == 0) {
+                    rel_phases[i][j] = "0";
+                } else {
+                    float theta = atan2(elem.im, elem.re);
+                    float q = theta / PI;
+                    rel_phases[i][j] = find_phase_frac(q);
+                }
+            }
+        }
+        return rel_phases;
+    }
+
     /**
     * Get the approximate state vector up to a global phase from a pure density matrix
     *
