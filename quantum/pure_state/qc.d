@@ -1206,6 +1206,79 @@ struct QuantumCircuit {
         vis.compile_tex_and_cleanup(compiler, filename);
     }
 
+    // Approximate the relative phase given as a 
+    // floating point number q, as a fraction
+    private string find_phase_frac(float q) {
+        real n = 0;
+        real d = 1;
+
+        real[] frac_coeff_list;
+        frac_coeff_list ~= floor(q);
+
+        real[] numerator_list = [1, frac_coeff_list[0]];
+        real[] denominator_list = [0, 1];
+
+        real denominator_max = 128;
+        real tolerance = 1e-12;
+
+        int iteration = 2;
+        while (true) {
+            real frac_part = q - floor(q);
+
+            if (abs(frac_part) < tolerance)
+                break;
+
+            real r = 1.0 / frac_part;
+            frac_coeff_list ~= floor(r);
+
+            real numerator = frac_coeff_list[iteration - 1] * numerator_list[iteration - 1] + numerator_list[iteration - 2];
+            real denominator = frac_coeff_list[iteration - 1] * denominator_list[iteration - 1] + denominator_list[iteration - 2];
+            numerator_list ~= numerator;
+            denominator_list ~= denominator;
+
+            if (denominator_list[$ - 1] > denominator_max ||
+                abs(q - numerator_list[$ - 1] / denominator_list[$ - 1]) < tolerance) {
+
+                n = numerator_list[$ - 1];
+                d = denominator_list[$ - 1];
+                break;
+            }
+
+            iteration++;
+        }
+
+        int ni = cast(int) n;
+        int di = cast(int) d;
+
+        if (ni == 0)
+            return "0";
+
+        if (di == 1)
+            return format("%d * Pi", ni);
+
+        return format("%d * Pi/%d", ni, di);
+    }
+
+    /**
+     * Get the relative phase of the state approximated as a fraction 
+     * 
+     * returns: The relative phase corresponding to each state as an array
+     */
+    string[] get_rel_phase() {
+        string[] rel_phases;
+        foreach (amplitude; this.state.elems) {
+            if (amplitude.re == 0 && amplitude.im == 0) {
+                rel_phases ~= "0";
+            } else {
+                float theta = atan2(amplitude.im, amplitude.re);
+                float q = theta / PI;
+                string rel_phase = find_phase_frac(q);
+                rel_phases ~= rel_phase;
+            }
+        }
+        return rel_phases;
+    }
+
     /**
     * Get the density matrix rho from the current state vector
     *
