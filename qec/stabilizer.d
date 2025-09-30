@@ -30,9 +30,9 @@ struct QecConfig {
 }
 
 struct Tableau {
-    QuantumCircuit* qc;
     int num_qubits;
     Matrix!int tableau_internal;
+    Vector!int error;
 
     /**
     * The constructor for the tableau object which is part of the stabilizer formalism 
@@ -42,8 +42,7 @@ struct Tableau {
     * params:
     * num_qubits = The number of qubits in the quantum system.
     */
-    this(QuantumCircuit* qc, int num_qubits) {
-        this.qc = qc;
+    this(int num_qubits) {
         this.num_qubits = num_qubits;
 
         // the number of rows is always 2n, where n is the number of qubits
@@ -309,8 +308,8 @@ struct Tableau {
             int[] x_bits_s = stabilizer.elems[0 .. this.num_qubits];
             int[] z_bits_s = stabilizer.elems[this.num_qubits .. 2 * this.num_qubits];
 
-            int[] x_bits_e = this.qc.error.elems[0 .. this.num_qubits];
-            int[] z_bits_e = this.qc.error.elems[this.num_qubits .. 2 * this.num_qubits];
+            int[] x_bits_e = this.error.elems[0 .. this.num_qubits];
+            int[] z_bits_e = this.error.elems[this.num_qubits .. 2 * this.num_qubits];
 
             int sum = 0;
             for (int bit_idx = 0; bit_idx < this.num_qubits; bit_idx++) {
@@ -344,9 +343,9 @@ struct Tableau {
      * qubit_idx = The index of the qubit to propogate the error of, if it exists
      */
     void propogate_hadamard(int qubit_idx) {
-        int temp = this.qc.error[qubit_idx];
-        this.qc.error[qubit_idx] = this.qc.error[this.num_qubits + qubit_idx];
-        this.qc.error[this.num_qubits + qubit_idx] = temp;
+        int temp = this.error[qubit_idx];
+        this.error[qubit_idx] = this.error[this.num_qubits + qubit_idx];
+        this.error[this.num_qubits + qubit_idx] = temp;
     }
 
     /**
@@ -357,8 +356,8 @@ struct Tableau {
      * qubit_idx = The index of the qubit to propogate the error of, if it exists
      */
     void propogate_s(int qubit_idx) {
-        this.qc.error[this.num_qubits + qubit_idx] = this.qc.error[this.num_qubits + qubit_idx] ^ this
-            .qc.error[qubit_idx];
+        this.error[this.num_qubits + qubit_idx] = this.error[this.num_qubits + qubit_idx] ^ this
+            .error[qubit_idx];
     }
 
     /**
@@ -370,10 +369,11 @@ struct Tableau {
      * target_qubit_idx = The index of the target qubit to propogate the error of, if it exists
      */
     void propogate_cnot(int control_qubit_idx, int target_qubit_idx) {
-        this.qc.error[target_qubit_idx] = this.qc.error[target_qubit_idx] ^ this
-            .qc.error[control_qubit_idx];
-        this.qc.error[this.num_qubits + control_qubit_idx] = this.qc.error[this.num_qubits + control_qubit_idx] ^ this
-            .qc.error[this.num_qubits + target_qubit_idx];
+        this.error[target_qubit_idx] = this.error[target_qubit_idx] ^ this
+            .error[control_qubit_idx];
+
+        this.error[this.num_qubits + control_qubit_idx] = this.error[this.num_qubits + control_qubit_idx] ^ this
+            .error[this.num_qubits + target_qubit_idx];
     }
 
     /**
@@ -385,12 +385,10 @@ struct Tableau {
      * target_qubit_idx = The index of the target qubit to propogate the error of, if it exists
      */
     void propogate_cz(int control_qubit_idx, int target_qubit_idx) {
-        this.qc.error[this.num_qubits + control_qubit_idx] = this.qc
-            .error[this.num_qubits = control_qubit_idx] ^ this
-            .qc.error[target_qubit_idx];
+        this.error[this.num_qubits + control_qubit_idx] = this
+            .error[this.num_qubits = control_qubit_idx] ^ this.error[target_qubit_idx];
 
-        this.qc.error[this.num_qubits + target_qubit_idx] = this.qc
-            .error[this.num_qubits + target_qubit_idx] ^ this
-            .qc.error[control_qubit_idx];
+        this.error[this.num_qubits + target_qubit_idx] = this
+            .error[this.num_qubits + target_qubit_idx] ^ this.error[control_qubit_idx];
     }
 }

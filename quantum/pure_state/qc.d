@@ -43,7 +43,6 @@ struct QuantumCircuit {
 
     // These are quantum error correction
     Tableau tableau;
-    Vector!int error;
     QecConfig qec_conf;
 
     // These are for circuit visualization
@@ -188,11 +187,11 @@ struct QuantumCircuit {
 
         this.qec_conf = conf;
 
-        this.tableau = Tableau(&this, this.num_qubits);
+        this.tableau = Tableau(this.num_qubits);
 
         int[] error_arr = new int[2 * this.num_qubits];
         error_arr[] = 0;
-        this.error = Vector!int(2 * this.num_qubits, error_arr);
+        this.tableau.error = Vector!int(2 * this.num_qubits, error_arr);
 
         this.decoherence_conf = DecoherenceConfig(Nullable!T1Decay.init, Nullable!T2Decay.init, "none");
     }
@@ -222,11 +221,11 @@ struct QuantumCircuit {
 
         this.qec_conf = conf;
 
-        this.tableau = Tableau(&this, this.num_qubits);
+        this.tableau = Tableau(this.num_qubits);
 
         int[] error_arr = new int[2 * this.num_qubits];
         error_arr[] = 0;
-        this.error = Vector!int(2 * this.num_qubits, error_arr);
+        this.tableau.error = Vector!int(2 * this.num_qubits, error_arr);
 
         this.decoherence_conf = DecoherenceConfig(Nullable!T1Decay.init, Nullable!T2Decay.init, "none");
     }
@@ -351,7 +350,7 @@ struct QuantumCircuit {
         update_tableau("H", qubit_idx);
 
         if (this.qec_conf.qec_mode == "automatic") {
-            if (this.error[qubit_idx] == 1 || this.error[this.num_qubits + qubit_idx] == 1) {
+            if (this.tableau.error[qubit_idx] == 1 || this.tableau.error[this.num_qubits + qubit_idx] == 1) {
                 this.tableau.propogate_hadamard(qubit_idx);
             }
         }
@@ -583,8 +582,10 @@ struct QuantumCircuit {
         update_tableau("CX", [control_qubit_idx, target_qubit_idx]);
 
         if (this.qec_conf.qec_mode == "automatic") {
-            if (this.error[control_qubit_idx] == 1 || this.error[this.num_qubits + control_qubit_idx] == 1
-                || this.error[target_qubit_idx] == 1 || this.error[this.num_qubits + target_qubit_idx] == 1) {
+            if (this.tableau.error[control_qubit_idx] == 1 || this.tableau.error[this.num_qubits + control_qubit_idx] == 1
+                || this.tableau.error[target_qubit_idx] == 1 || this.tableau
+                .error[this.num_qubits + target_qubit_idx] == 1) {
+
                 this.tableau.propogate_cnot(control_qubit_idx, target_qubit_idx);
             }
         }
@@ -630,7 +631,7 @@ struct QuantumCircuit {
         update_tableau("S", qubit_idx);
 
         if (this.qec_conf.qec_mode == "automatic") {
-            if (this.error[qubit_idx] == 1 || this.error[this.num_qubits + qubit_idx] == 1) {
+            if (this.tableau.error[qubit_idx] == 1 || this.tableau.error[this.num_qubits + qubit_idx] == 1) {
                 this.tableau.propogate_s(qubit_idx);
             }
         }
@@ -715,9 +716,9 @@ struct QuantumCircuit {
         update_tableau("CZ", [control_qubit_idx, target_qubit_idx]);
 
         if (this.qec_conf.qec_mode == "automatic") {
-            if (this.error[control_qubit_idx] == 1 || this.error[target_qubit_idx] == 1 ||
-                this.error[this.num_qubits + control_qubit_idx] == 1 || this
-                .error[this.num_qubits + target_qubit_idx] == 1) {
+            if (this.tableau.error[control_qubit_idx] == 1 || this.tableau.error[target_qubit_idx] == 1 ||
+                this.tableau.error[this.num_qubits + control_qubit_idx] == 1 || this
+                .tableau.error[this.num_qubits + target_qubit_idx] == 1) {
 
                 this.tableau.propogate_cz(control_qubit_idx, target_qubit_idx);
             }
