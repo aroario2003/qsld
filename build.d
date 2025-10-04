@@ -32,6 +32,7 @@ string[] library_files = [
     "algos/deutsch_jozsa.d",
     "algos/grovers.d",
     "algos/shors.d",
+    "algos/bbb84.d",
     "viz/visualization.d",
     "qml/qnn.d",
     "qec/stabilizer.d"
