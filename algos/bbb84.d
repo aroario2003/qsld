@@ -1,3 +1,5 @@
+module algos.bbb84;
+
 import std.stdio;
 import std.random;
 import std.array;
@@ -10,13 +12,6 @@ import std.algorithm : canFind, map;
 
 import quantum.pure_state.qc;
 import quantum.pure_state.gate_noise;
-
-enum EveStrategy {
-    InterceptResend,
-    BiasedBasis,
-    FixedBasis,
-    Noise,
-}
 
 struct BBB84 {
     QuantumCircuit qc;
