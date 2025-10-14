@@ -36,7 +36,8 @@ string[] library_files = [
     "algos/quantum_teleportation.d",
     "viz/visualization.d",
     "qml/qnn.d",
-    "qec/stabilizer.d"
+    "qec/stabilizer.d",
+    "qec/decoder.d"
 ];
 
 void compile(string[] compile_cmd, bool library = true, string example_name = "") {

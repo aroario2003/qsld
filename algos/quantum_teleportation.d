@@ -7,6 +7,14 @@ import std.conv;
 import quantum.pure_state.qc;
 
 struct QuantumTeleportation {
+    /**
+    * Executes the quantum teleportation algorithm
+    *
+    * params:
+    * randomize_q0 = A function which randomizes the state of the qubit at index 0.
+    *                Takes a pointer to the QuantumCircuit object used during the 
+    *                algorithm.
+    */
     void quantum_teleportation(void function(QuantumCircuit* qc) randomize_q0) {
         // Initialize a quantum circuit with 3 qubits to represent 
         // Alice and Bob's EPR (Einstein Podolsky Rosen) pair.
@@ -45,6 +53,9 @@ struct QuantumTeleportation {
             qc.pauli_x(2);
             qc.pauli_z(2);
         }
+
+        // Draw the cicuit (commented because it is unnecessary in most cases)
+        // qc.draw();
 
         writeln(format("Bob measured: %d%d", q0_state, q1_state));
 
