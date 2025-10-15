@@ -106,7 +106,7 @@ import std.stdio;
 import quantum.pure_state.qc;
 
 void main() {
-    QuantumCircuit qc = QuantumCiruit(3);
+    QuantumCircuit qc = QuantumCircuit(3);
 
     // Make a 3 qubit GHZ state
     qc.hadamard(0);
