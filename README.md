@@ -85,3 +85,37 @@ $ sudo mkdir -p /usr/local/share/texmf/tex/latex/quantikz/
 
 Once this is done you should move **just** the `quantikz.sty` file to that directory with root priveleges.
 
+## Features
+
+- `state vector simulation`
+- `density matrix simulation`
+- `observable application`
+- `expectation value calculation`
+- `gate noise`
+- `decoherence (T1/T2 decay)`
+- `algorithm implementations (Deutsch-Jozsa, BBB84, Quantum Teleportation, Grovers, Shors)`
+- `quantum machine learning`
+
+## Getting Started
+
+Writting your first quantum circuit with QSLD is easy
+
+```d
+import std.stdio;
+import quantum.pure_state.qc
+
+void main() {
+    QuantumCircuit qc = QuantumCiruit(3);
+
+    // Make a 3 qubit GHZ state
+    qc.hadamard(0);
+    qc.cnot(0, 1);
+    qc.cnot(1, 2);
+
+    writeln("Final quantum state: ", qc.state.elems);
+}
+```
+
+You can see more simple and complex examples in the `examples/` directory.
+
+
