@@ -95,6 +95,7 @@ Once this is done you should move **just** the `quantikz.sty` file to that direc
 - `decoherence (T1/T2 decay)`
 - `algorithm implementations (Deutsch-Jozsa, BBB84, Quantum Teleportation, Grovers, Shors)`
 - `quantum machine learning`
+- `circuit visualizations`
 
 ## Getting Started
 
@@ -102,7 +103,7 @@ Writting your first quantum circuit with QSLD is easy
 
 ```d
 import std.stdio;
-import quantum.pure_state.qc
+import quantum.pure_state.qc;
 
 void main() {
     QuantumCircuit qc = QuantumCiruit(3);
