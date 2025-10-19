@@ -13,6 +13,8 @@ import std.stdio;
 import linalg.vector;
 import linalg.matrix;
 
+import qec.lib;
+
 struct QecConfig {
     string qec_mode;
 
@@ -250,77 +252,13 @@ struct Tableau {
         }
     }
 
-    // Used to put the tableau matrix into upper echelon form
-    // and find independent stabilizers used to correct the state
-    private Matrix!int gaussian_elimination() {
-        ulong row_len = this.tableau_internal.rows[0].length - (cast(ulong) 1);
-        ulong r = 0;
-
-        bool pivot_found = false;
-
-        Vector!int pivot_row = Vector!int(2 * this.num_qubits, new int[2 * this.num_qubits]);
-        Matrix!int independent_rows;
-        ulong[] pivoted_cols;
-        ulong[] pivoted_rows;
-
-        for (ulong col_idx = 0; col_idx < row_len; col_idx++) {
-            if (pivoted_cols.canFind(col_idx))
-                continue;
-
-            for (int i = this.num_qubits - 1; i < 2 * this.num_qubits; i++) {
-                if (pivoted_rows.canFind(i))
-                    continue;
-
-                Vector!int row = this.tableau_internal.rows[i];
-
-                if (row[col_idx] == 1) {
-                    pivot_found = true;
-
-                    Vector!int temp = this.tableau_internal.rows[this.num_qubits + r];
-                    this.tableau_internal.rows[this.num_qubits + r] = this.tableau_internal.rows[i];
-                    this.tableau_internal.rows[i] = temp;
-
-                    pivot_row = Vector!int((2 * this.num_qubits), this
-                            .tableau_internal.rows[this.num_qubits + r].elems[0 .. row_len].dup);
-
-                    pivoted_rows ~= i;
-                    pivoted_cols ~= col_idx;
-                    break;
-                }
-            }
-
-            if (pivot_found) {
-                for (int i = this.num_qubits - 1; i < 2 * this.num_qubits; i++) {
-                    Vector!int row = this.tableau_internal.rows[i];
-                    if (i != (this.num_qubits + r)) {
-                        if (row[col_idx] == 1) {
-                            for (int x = 0; x < row_len; x++) {
-                                this.tableau_internal.rows[i].elems[x] = row[x] ^ pivot_row[x];
-                            }
-                        }
-                    }
-                }
-
-                r++;
-                independent_rows.append(pivot_row);
-                pivot_found = false;
-
-                if (r >= this.num_qubits) {
-                    break;
-                }
-            }
-        }
-
-        return independent_rows;
-    }
-
     /**
      * Extracts the syndrome from the current state of the tableau
      *
      * returns: The vector of syndrome bits which represent the error
      */
     Vector!int measure() {
-        Matrix!int stabilizers = gaussian_elimination();
+        Matrix!int stabilizers = gaussian_elimination(this);
         Vector!int syndrome_bits;
         foreach (stabilizer; stabilizers.rows) {
             int[] x_bits_s = stabilizer.elems[0 .. this.num_qubits];
@@ -355,7 +293,7 @@ struct Tableau {
      * returns: The vector of syndrome bits which represent the error
      */
     Vector!int measure(Vector!int error) {
-        Matrix!int stabilizers = gaussian_elimination();
+        Matrix!int stabilizers = gaussian_elimination(this);
         Vector!int syndrome_bits;
         foreach (stabilizer; stabilizers.rows) {
             int[] x_bits_s = stabilizer.elems[0 .. this.num_qubits];

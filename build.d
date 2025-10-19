@@ -37,7 +37,8 @@ string[] library_files = [
     "viz/visualization.d",
     "qml/qnn.d",
     "qec/stabilizer.d",
-    "qec/decoder.d"
+    "qec/decoder.d",
+    "qec/lib.d"
 ];
 
 void compile(string[] compile_cmd, bool library = true, string example_name = "") {
