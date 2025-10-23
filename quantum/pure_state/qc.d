@@ -230,8 +230,19 @@ struct QuantumCircuit {
         this.decoherence_conf = DecoherenceConfig(Nullable!T1Decay.init, Nullable!T2Decay.init, "none");
     }
 
-    // Updates the visualization internal representation 
+    // Updates the visualization internal representation for any gate but toffoli
     private void update_visualization_arr(string gate_name, int[] qubit_idxs) {
+        this.visualization_arr[this.visualization_arr.length++] = tuple(gate_name, qubit_idxs, this
+                .timestep);
+        this.timestep += 1;
+    }
+
+    // Updates the visualization internal representation for the toffoli gate
+    private void update_visualization_arr(string gate_name, int[] control_idxs, int target_idx) {
+        int[] qubit_idxs;
+        qubit_idxs ~= control_idxs;
+        qubit_idxs ~= target_idx;
+
         this.visualization_arr[this.visualization_arr.length++] = tuple(gate_name, qubit_idxs, this
                 .timestep);
         this.timestep += 1;
@@ -612,6 +623,47 @@ struct QuantumCircuit {
     }
 
     /**
+    * Implements a general toffoli gate for n control qubits. The Toffoli gate is a cnot
+    * with more controls.
+    *
+    * params:
+    * control_qubit_idxs = The indices of the qubits to be the controls 
+    * 
+    * target_qubit_idx = The index of the target qubit to flip if all controls are 1
+    */
+    void toffoli(int[] control_qubit_idxs, int target_qubit_idx) {
+        assert(this.num_qubits >= 3, "The number of qubits shoud be >= 3, it is not");
+
+        update_visualization_arr("TF", control_qubit_idxs, target_qubit_idx);
+
+        int target_mask = (1 << target_qubit_idx);
+        int control_mask = 0;
+        foreach (idx; control_qubit_idxs) {
+            control_mask = control_mask | (1 << idx);
+        }
+
+        int j = 0;
+        for (int i = 0; i < this.state.length(); i++) {
+            if ((i & control_mask) == control_mask) {
+                j = i ^ target_mask;
+                if (i < j) {
+                    Complex!real temp = this.state[i];
+                    this.state[i] = this.state[j];
+                    this.state[j] = temp;
+                }
+            }
+        }
+
+        int gate_duration = cast(int)(2 * control_qubit_idxs.length - 1);
+
+        foreach (idx; control_qubit_idxs) {
+            apply_decoherence(idx, gate_duration);
+        }
+
+        apply_decoherence(target_qubit_idx, gate_duration);
+    }
+
+    /**
     * The S phase shift gate or PI/4 gate applies a phase shift of PI/4 to the state |1>
     *
     * params:
@@ -629,7 +681,6 @@ struct QuantumCircuit {
 
         // This will only happen if QecConfig.qec_mode is set to automatic
         update_tableau("S", qubit_idx);
-
         if (this.qec_conf.qec_mode == "automatic") {
             if (this.tableau.error[qubit_idx] == 1 || this.tableau.error[this.num_qubits + qubit_idx] == 1) {
                 this.tableau.propogate_s(qubit_idx);
@@ -663,7 +714,6 @@ struct QuantumCircuit {
     */
     void t(int qubit_idx) {
         update_visualization_arr("T", [qubit_idx]);
-
         for (int i = 0; i < this.state.length(); i++) {
             bool qubit_is_one = (i & (1 << qubit_idx)) != 0;
             if (qubit_is_one) {
@@ -705,8 +755,10 @@ struct QuantumCircuit {
         update_visualization_arr("CZ", [control_qubit_idx, target_qubit_idx]);
 
         for (int i = 0; i < this.state.length(); i++) {
-            bool cntl_qubit_is_one = (i & (1 << control_qubit_idx)) != 0;
-            bool tgt_qubit_is_one = (i & (1 << target_qubit_idx)) != 0;
+            bool cntl_qubit_is_one = (
+                i & (1 << control_qubit_idx)) != 0;
+            bool tgt_qubit_is_one = (
+                i & (1 << target_qubit_idx)) != 0;
             if (cntl_qubit_is_one && tgt_qubit_is_one) {
                 this.state[i] = this.state[i] * Complex!real(-1, 0);
             }
@@ -859,17 +911,15 @@ struct QuantumCircuit {
 
         Complex!real c = Complex!real(cos(theta / 2), 0);
         Complex!real s = Complex!real(0, -1) * Complex!real(sin(theta / 2), 0);
-        Vector!(Complex!real) psi = Vector!(Complex!real)(cast(int) this.state.length(), new Complex!real[this
-                .state.length()]);
-
-        // The .init value of psi without this loop will be nan+nani for all elements
+        Vector!(Complex!real) psi = Vector!(Complex!real)(
+            cast(int) this.state.length(), new Complex!real[this
+                .state.length()]); // The .init value of psi without this loop will be nan+nani for all elements
         for (int i = 0; i < psi.length(); i++) {
             psi[i] = Complex!real(0, 0);
         }
 
         for (int i = 0; i < this.state.length(); i++) {
             int j = i ^ (1 << qubit_idx);
-
             if (i < j) {
                 Complex!real a = this.state[i];
                 Complex!real b = this.state[j];
@@ -877,9 +927,7 @@ struct QuantumCircuit {
                 psi[j] = s * a + c * b;
             }
         }
-        this.state = psi;
-
-        // This will only happen if DecoherenceConfig.decoherence_mode is
+        this.state = psi; // This will only happen if DecoherenceConfig.decoherence_mode is
         // set to automatic
         apply_decoherence(qubit_idx, 30);
     }
@@ -914,7 +962,8 @@ struct QuantumCircuit {
         Complex!real c = Complex!real(cos(theta / 2), 0);
         Complex!real s = Complex!real(sin(theta / 2), 0);
 
-        Vector!(Complex!real) psi = Vector!(Complex!real)(cast(int) this.state.length(), new Complex!real[this
+        Vector!(Complex!real) psi = Vector!(
+            Complex!real)(cast(int) this.state.length(), new Complex!real[this
                 .state.length()]);
 
         // The .init value of psi without this loop will be nan+nani for all elements
@@ -932,9 +981,7 @@ struct QuantumCircuit {
                 psi[j] = s * a + c * b;
             }
         }
-        this.state = psi;
-
-        // This will only happen if DecoherenceConfig.decoherence_mode is
+        this.state = psi; // This will only happen if DecoherenceConfig.decoherence_mode is
         // set to automatic
         apply_decoherence(qubit_idx, 30);
     }
@@ -966,9 +1013,10 @@ struct QuantumCircuit {
     void rz(int qubit_idx, real theta) {
         update_visualization_arr("RZ", [qubit_idx]);
 
-        Complex!real z0 = exp(Complex!real(0, -1) * Complex!real(theta / 2, 0));
-        Complex!real z1 = exp(Complex!real(0, 1) * Complex!real(theta / 2, 0));
-
+        Complex!real z0 = exp(Complex!real(0, -1) * Complex!real(
+                theta / 2, 0));
+        Complex!real z1 = exp(Complex!real(0, 1) * Complex!real(
+                theta / 2, 0));
         for (int i = 0; i < this.state.length(); i++) {
             int qubit_value = (i >> qubit_idx) & 1;
             if (qubit_value == 0) {
@@ -1017,14 +1065,18 @@ struct QuantumCircuit {
         update_visualization_arr("CR", [control_qubit_idx, target_qubit_idx]);
 
         for (int i = 0; i < this.state.length(); i++) {
-            int cntl_qubit_val = (i >> control_qubit_idx) & 1;
-            int tgt_qubit_val = (i >> target_qubit_idx) & 1;
+            int cntl_qubit_val = (
+                i >> control_qubit_idx) & 1;
+            int tgt_qubit_val = (
+                i >> target_qubit_idx) & 1;
 
             if (cntl_qubit_val == 1 && tgt_qubit_val == 1) {
                 if (!inverse) {
-                    this.state[i] = this.state[i] * expi(2 * PI / pow(2.0, k));
+                    this.state[i] = this.state[i] * expi(
+                        2 * PI / pow(2.0, k));
                 } else {
-                    this.state[i] = this.state[i] * expi(-2 * PI / pow(2.0, k));
+                    this.state[i] = this.state[i] * expi(
+                        -2 * PI / pow(2.0, k));
                 }
             }
         }
@@ -1055,20 +1107,25 @@ struct QuantumCircuit {
 
     // measurement of a single qubit internal logic, this function
     // exists solely to prevent code duplication
-    private string measure_internal(int qubit_idx) {
+    private string measure_internal(
+        int qubit_idx) {
         real probability_0 = 0;
         real probability_1 = 0;
 
         // sum probabilities of the qubit in each state
         for (int i = 0; i < this.state.length(); i++) {
-            bool qubit_is_zero = (i & (1 << qubit_idx)) == 0;
-            bool qubit_is_one = (i & (1 << qubit_idx)) != 0;
+            bool qubit_is_zero = (
+                i & (1 << qubit_idx)) == 0;
+            bool qubit_is_one = (
+                i & (1 << qubit_idx)) != 0;
 
             if (qubit_is_zero) {
-                real state_prob = norm(this.state[i]);
+                real state_prob = norm(
+                    this.state[i]);
                 probability_0 += state_prob;
             } else if (qubit_is_one) {
-                real state_prob = norm(this.state[i]);
+                real state_prob = norm(
+                    this.state[i]);
                 probability_1 += state_prob;
             }
         }
@@ -1077,12 +1134,11 @@ struct QuantumCircuit {
         auto rng = Random(unpredictableSeed);
         auto r = uniform(0.0, 1.0f, rng);
 
-        int result;
-
-        // determine measurement result
+        int result; // determine measurement result
         if (r < probability_0) {
             result = 0;
-        } else if (r >= probability_0) {
+        } else if (
+            r >= probability_0) {
             result = 1;
         }
 
@@ -1099,6 +1155,7 @@ struct QuantumCircuit {
     */
     string measure(int qubit_idx) {
         update_visualization_arr("M", [qubit_idx]);
+
         string result = measure_internal(qubit_idx);
         return result;
     }
@@ -1123,7 +1180,8 @@ struct QuantumCircuit {
 
         int[string] counts;
         for (int i = 0; i < shots; i++) {
-            string result = measure_internal(qubit_idx);
+            string result = measure_internal(
+                qubit_idx);
             counts[result] += 1;
         }
         return counts;
@@ -1132,16 +1190,19 @@ struct QuantumCircuit {
     // measurement for the entire system internal logic, this function exists solely 
     // to prevent code duplication
     private string measure_all_internal() {
-        Vector!float probs = Vector!float(cast(int) this.state.length(), new float[this
+        Vector!float probs = Vector!float(
+            cast(int) this.state.length(), new float[this
                 .state.length()]); // Take the magnitude of each complex probability amplitude
         foreach (i, c; this.state.elems) {
-            float magnitude = sqrt(pow(c.re, 2) + pow(c.im, 2));
+            float magnitude = sqrt(pow(c.re, 2) + pow(
+                    c.im, 2));
             float prob = pow(magnitude, 2);
             probs.elems[i] = prob;
         }
 
         // Perform inverse transform sampling on probabilities since measurement is non-algorithmic
-        auto rng = Random(unpredictableSeed);
+        auto rng = Random(
+            unpredictableSeed);
         auto r = uniform(0.0, 1.0f, rng);
 
         float sum = 0;
@@ -1149,7 +1210,8 @@ struct QuantumCircuit {
         foreach (i, elem; probs.elems) {
             sum += elem;
             if (r < sum) {
-                binary_result = format("%0*b", this.num_qubits, i);
+                binary_result = format("%0*b", this
+                        .num_qubits, i);
                 break;
             }
         }
@@ -1163,7 +1225,8 @@ struct QuantumCircuit {
     * returns: the bitstring of the state which was measured probabilistically
     */
     string measure_all() {
-        update_visualization_arr("MA", iota(0, this.num_qubits).array);
+        update_visualization_arr("MA", iota(0, this
+                .num_qubits).array);
 
         string binary_result = measure_all_internal();
         return binary_result;
@@ -1203,34 +1266,43 @@ struct QuantumCircuit {
     void draw(string compiler = "pdflatex", string filename = "circuit.tex") {
         Visualization vis = Visualization(this.visualization_arr, this.num_qubits, this
                 .initial_state_idx);
+
         vis.parse_and_write_vis_arr(filename);
         vis.compile_tex_and_cleanup(compiler, filename);
     }
 
     // Approximate the relative phase given as a 
     // floating point number q, as a fraction
-    private string find_phase_frac(float q) {
+    private string find_phase_frac(
+        float q) {
         real n = 0;
         real d = 1;
 
         real[] frac_coeff_list;
         frac_coeff_list ~= floor(q);
 
-        real[] numerator_list = [1, frac_coeff_list[0]];
-        real[] denominator_list = [0, 1];
-
+        real[] numerator_list = [
+            1,
+            frac_coeff_list[0]
+        ];
+        real[] denominator_list = [
+            0, 1
+        ];
         real denominator_max = 128;
         real tolerance = 1e-12;
 
         int iteration = 2;
         while (true) {
-            real frac_part = q - floor(q);
+            real frac_part = q - floor(
+                q);
 
-            if (abs(frac_part) < tolerance)
+            if (
+                abs(frac_part) < tolerance)
                 break;
 
             real r = 1.0 / frac_part;
-            frac_coeff_list ~= floor(r);
+            frac_coeff_list ~= floor(
+                r);
 
             real numerator = frac_coeff_list[iteration - 1] * numerator_list[iteration - 1] + numerator_list[iteration - 2];
             real denominator = frac_coeff_list[iteration - 1] * denominator_list[iteration - 1] + denominator_list[iteration - 2];
@@ -1271,9 +1343,11 @@ struct QuantumCircuit {
             if (amplitude.re == 0 && amplitude.im == 0) {
                 rel_phases ~= "0";
             } else {
-                float theta = atan2(amplitude.im, amplitude.re);
+                float theta = atan2(amplitude.im, amplitude
+                        .re);
                 float q = theta / PI;
-                string rel_phase = find_phase_frac(q);
+                string rel_phase = find_phase_frac(
+                    q);
                 rel_phases ~= rel_phase;
             }
         }
@@ -1286,6 +1360,7 @@ struct QuantumCircuit {
     * returns: The density matrix of the system based on the state vector
     */
     Matrix!(Complex!real) get_rho() {
-        return this.state.outer_prod(this.state.dagger());
+        return this.state.outer_prod(
+            this.state.dagger());
     }
 }

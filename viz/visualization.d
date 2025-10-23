@@ -9,6 +9,7 @@ import std.array;
 import std.file;
 
 import core.stdc.stdlib : exit;
+import std.algorithm : canFind;
 
 struct Visualization {
     Tuple!(string, int[], int)[] vis_arr;
@@ -57,7 +58,7 @@ struct Visualization {
             int[] qubit_idxs = item[1];
             int timestep = item[2];
 
-            if (!gate_name.startsWith("C") && gate_name != "SWAP" && gate_name != "iSWAP") {
+            if (!gate_name.startsWith("C") && gate_name != "SWAP" && gate_name != "iSWAP" && gate_name != "TF") {
                 if (gate_name != "M" && gate_name != "MA") {
                     lines[qubit_idxs[0]][lines[qubit_idxs[0]].length++] = format(" \\gate{%s} &", gate_name);
                 } else {
@@ -89,21 +90,61 @@ struct Visualization {
                 }
                 switch (gate_name) {
                 case "CX":
+                    foreach (k; 0 .. this.num_qubits) {
+                        if (!qubit_idxs.canFind(k)) {
+                            lines[k][lines[k].length++] = " \\qw &";
+                        }
+                    }
                     lines[qubit_idxs[0]][lines[qubit_idxs[0]].length++] = format(" \\ctrl{%d} &", qubit_idxs[1] - qubit_idxs[0]);
                     lines[qubit_idxs[1]][lines[qubit_idxs[1]].length++] = " \\targ{} &";
                     break;
+                case "TF":
+                    int target_qubit = qubit_idxs[qubit_idxs.length - 1];
+
+                    for (int j = 0; j < qubit_idxs.length - 1; j++) {
+                        lines[qubit_idxs[j]][lines[qubit_idxs[j]].length++] = format(" \\ctrl{%d} &", target_qubit - qubit_idxs[j]);
+                    }
+
+                    foreach (k; 0 .. this.num_qubits) {
+                        if (!qubit_idxs.canFind(k)) {
+                            lines[k][lines[k].length++] = " \\qw &";
+                        }
+                    }
+
+                    lines[target_qubit][lines[target_qubit].length++] = " \\targ{} &";
+                    break;
                 case "SWAP":
+                    foreach (k; 0 .. this.num_qubits) {
+                        if (!qubit_idxs.canFind(k)) {
+                            lines[k][lines[k].length++] = " \\qw &";
+                        }
+                    }
                     lines[qubit_idxs[0]][lines[qubit_idxs[0]].length++] = format(" \\swap{%d} &", qubit_idxs[1] - qubit_idxs[0]);
                     lines[qubit_idxs[1]][lines[qubit_idxs[1]].length++] = " \\targX{} &";
                     break;
                 default:
+                    foreach (k; 0 .. this.num_qubits) {
+                        if (!qubit_idxs.canFind(k)) {
+                            lines[k][lines[k].length++] = " \\qw &";
+                        }
+                    }
                     lines[qubit_idxs[0]][lines[qubit_idxs[0]].length++] = format(" \\ctrl{%d} &", qubit_idxs[1] - qubit_idxs[0]);
                     lines[qubit_idxs[1]][lines[qubit_idxs[1]].length++] = format(" \\gate{%s} &", gate_name);
                 }
             }
         }
 
+        ulong max_len = 0;
         foreach (line; lines) {
+            if (line.length > max_len)
+                max_len = line.length;
+        }
+
+        foreach (line; lines) {
+            while (line.length < max_len) {
+                line[line.length++] = " \\qw &";
+            }
+
             line[line.length++] = " \\qw \\\\\n";
             string full_line = line.join();
             append(filename, full_line);

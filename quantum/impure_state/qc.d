@@ -156,8 +156,19 @@ struct QuantumCircuit {
         this.decoherence_conf = decoherence_conf;
     }
 
-    // Updates the visualization internal representation 
+    // Updates the visualization internal representation for any gate but toffoli
     private void update_visualization_arr(string gate_name, int[] qubit_idxs) {
+        this.visualization_arr[this.visualization_arr.length++] = tuple(gate_name, qubit_idxs, this
+                .timestep);
+        this.timestep += 1;
+    }
+
+    // Updates the visualization internal representation for the toffoli gate
+    private void update_visualization_arr(string gate_name, int[] control_idxs, int target_idx) {
+        int[] qubit_idxs;
+        qubit_idxs ~= control_idxs;
+        qubit_idxs ~= target_idx;
+
         this.visualization_arr[this.visualization_arr.length++] = tuple(gate_name, qubit_idxs, this
                 .timestep);
         this.timestep += 1;
@@ -570,6 +581,56 @@ struct QuantumCircuit {
                 "One or more of the qubit indices is beyond the amount specified for the system");
             this.cnot(idx_tuple[0], idx_tuple[1]);
         }
+    }
+
+    /**
+    * Implements a general toffoli gate for n control qubits. The Toffoli gate is a cnot
+    * with more controls.
+    *
+    * params:
+    * control_qubit_idxs = The indices of the qubits to be the controls 
+    * 
+    * target_qubit_idx = The index of the target qubit to flip if all controls are 1
+    */
+    void toffoli(int[] control_qubit_idxs, int target_qubit_idx) {
+        assert(this.num_qubits >= 3, "the number of qubits should be >= 3, it is not");
+
+        update_visualization_arr("TF", control_qubit_idxs, target_qubit_idx);
+
+        int target_mask = (1 << target_qubit_idx);
+        int control_mask = 0;
+
+        foreach (idx; control_qubit_idxs) {
+            control_mask = control_mask | (1 << idx);
+        }
+
+        int[] f = new int[pow(2, this.num_qubits)];
+        f[] = 0;
+        for (int i = 0; i < pow(2, this.num_qubits); i++) {
+            if ((i & control_mask) == control_mask) {
+                f[i] = (i ^ target_mask);
+            } else {
+                f[i] = i;
+            }
+        }
+
+        Matrix!(Complex!real) rho_prime = Matrix!(Complex!real)(this.density_mat.row_num, this.density_mat.col_num, [
+            ]).identity(this.density_mat.row_num);
+        for (int u = 0; u < pow(2, this.num_qubits); u++) {
+            for (int v = 0; v < pow(2, this.num_qubits); v++) {
+                rho_prime.rows[u].elems[v] = this.density_mat.rows[f[u]].elems[f[v]];
+            }
+        }
+
+        this.density_mat = rho_prime;
+
+        int gate_duration = cast(int)(2 * control_qubit_idxs.length - 1);
+
+        foreach (idx; control_qubit_idxs) {
+            apply_decoherence(idx, gate_duration);
+        }
+
+        apply_decoherence(target_qubit_idx, gate_duration);
     }
 
     /**
