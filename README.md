@@ -119,4 +119,30 @@ void main() {
 
 You can see more simple and complex examples in the `examples/` directory.
 
+### Drawing the circuit
+
+In order to draw the circuit above you just add one line to it:
+
+```d
+import std.stdio;
+import quantum.pure_state.qc;
+
+void main() {
+    QuantumCircuit qc = QuantumCircuit(3);
+
+    // Make a 3 qubit GHZ state
+    qc.hadamard(0);
+    qc.cnot(0, 1);
+    qc.cnot(1, 2);
+    qc.draw();
+
+    writeln("Final quantum state: ", qc.state.elems);
+}
+```
+
+The image generated is:
+
+![circuit diagram](assets/circuit_example.png)
+
+
 
