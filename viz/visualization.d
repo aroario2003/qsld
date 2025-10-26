@@ -60,7 +60,11 @@ struct Visualization {
 
             if (!gate_name.startsWith("C") && gate_name != "SWAP" && gate_name != "iSWAP" && gate_name != "TF") {
                 if (gate_name != "M" && gate_name != "MA") {
-                    lines[qubit_idxs[0]][lines[qubit_idxs[0]].length++] = format(" \\gate{%s} &", gate_name);
+                    if (gate_name == "R_X" || gate_name == "R_Y" || gate_name == "R_Z") {
+                        lines[qubit_idxs[0]][lines[qubit_idxs[0]].length++] = format(" \\gate{%s(\\theta)} &", gate_name);
+                    } else {
+                        lines[qubit_idxs[0]][lines[qubit_idxs[0]].length++] = format(" \\gate{%s} &", gate_name);
+                    }
                 } else {
                     if (gate_name == "M") {
                         lines[qubit_idxs[0]][lines[qubit_idxs[0]].length++] = " \\meter{} &";
