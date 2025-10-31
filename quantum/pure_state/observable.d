@@ -85,7 +85,11 @@ struct Observable {
                         char bit_prime = cast(char)((bit_q ^ 1) + '0');
                         bit_arr[q] = bit_prime;
 
-                        phase_acc *= Complex!real(0, 1);
+                        if (bit_q == 0) {
+                            phase_acc *= Complex!real(0, 1);
+                        } else {
+                            phase_acc *= Complex!real(0, -1);
+                        }
                     } else if (term[q] == 'Z') {
                         if (bit_arr[q] == '1') {
                             phase_acc *= Complex!real(-1, 0);
