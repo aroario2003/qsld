@@ -933,7 +933,7 @@ struct QuantumCircuit {
     * theta = the angle to rotate the qubit by in radians
     */
     void rx(int qubit_idx, real theta) {
-        update_visualization_arr("RX", [qubit_idx]);
+        update_visualization_arr("R_X", [qubit_idx]);
 
         Matrix!(Complex!real) rx = Matrix!(Complex!real)(2, 2, [
                 Vector!(Complex!real)(2, [
@@ -979,7 +979,7 @@ struct QuantumCircuit {
     * theta = the angle in radians to rotate the qubit around the y-axis
     */
     void ry(int qubit_idx, real theta) {
-        update_visualization_arr("RY", [qubit_idx]);
+        update_visualization_arr("R_Y", [qubit_idx]);
 
         Matrix!(Complex!real) ry = Matrix!(Complex!real)(2, 2, [
                 Vector!(Complex!real)(2, [
@@ -1025,7 +1025,7 @@ struct QuantumCircuit {
     * theta = the angle in radians to apply to the phase shift exponential
     */
     void rz(int qubit_idx, real theta) {
-        update_visualization_arr("RZ", [qubit_idx]);
+        update_visualization_arr("R_Z", [qubit_idx]);
 
         Matrix!(Complex!real) rz = Matrix!(Complex!real)(2, 2, [
                 Vector!(Complex!real)(2, [

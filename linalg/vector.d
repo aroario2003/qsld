@@ -207,12 +207,12 @@ struct Vector(T) {
     * returns: A matrix of nx1 dimensions with the signs of complex values inverted
     */
     Matrix!T dagger()() if (is(T == Complex!real)) {
-
-        foreach (i, elem; this.elems) {
-            this.elems[i] = conj(elem);
+        Vector!T v = Vector!T(this.dim, this.elems.dup);
+        foreach (i, elem; v.elems) {
+            v[i] = conj(elem);
         }
 
-        return this.transpose();
+        return v.transpose();
     }
 
     /**
