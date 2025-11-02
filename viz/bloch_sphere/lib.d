@@ -67,7 +67,7 @@ package Matrix!(Complex!real) get_reduced_density_matrix(Matrix!(Complex!real) r
 
 package Tuple!(real, real) get_bloch_vector_angles(Matrix!(Complex!real) rho) {
     real x = 2 * rho.rows[0].elems[1].re;
-    real y = 2 * rho.rows[0].elems[1].im;
+    real y = -2 * rho.rows[0].elems[1].im;
     real z = (rho.rows[0].elems[0] - rho.rows[1].elems[1]).re;
 
     real theta = acos(z) * (180 / PI);

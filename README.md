@@ -85,6 +85,16 @@ $ sudo mkdir -p /usr/local/share/texmf/tex/latex/quantikz/
 
 Once this is done you should move **just** the `quantikz.sty` file to that directory with root priveleges.
 
+### Bloch Sphere Visualization
+
+In order to be able to create bloch sphere visualizations for a given qubit, you will need to install the `blochsphere` latex package. In order to do this, the easiest way is to install a tool for installing Latex packages called `tlmgr`. In order to install this utility you will need a TexLive infastructure package(s). For **Arch Linux** you should install `texlive-core` and for **Debian/Ubuntu** you should install both `texlive-base` and `texlive-full`. If you are on another Operating System, then I am not familiar on how to install these packages, therefore support is limited if not non-existent. However, if you have installed the packages then you should run:
+
+```console
+$ tlmgr install blochsphere
+```
+
+to install the blochsphere package. See instructions below on how to test if the installation worked.
+
 ## Features
 
 - `state vector simulation`
@@ -96,6 +106,7 @@ Once this is done you should move **just** the `quantikz.sty` file to that direc
 - `algorithm implementations (Deutsch-Jozsa, BBB84, Quantum Teleportation, Grovers, Shors)`
 - `quantum machine learning`
 - `circuit visualizations`
+- `bloch sphere visualization`
 
 ## Getting Started
 
@@ -119,7 +130,7 @@ void main() {
 
 You can see more simple and complex examples in the `examples/` directory.
 
-### Drawing the circuit
+### Drawing The Circuit
 
 In order to draw the circuit above you just add one line to it:
 
@@ -140,9 +151,36 @@ void main() {
 }
 ```
 
+The filename of the generated file is `circuit.pdf`.
+
 The image generated is:
 
 ![circuit diagram](assets/circuit_example.png)
+
+### Drawing The Bloch Sphere
+
+In order to draw the bloch sphere of a given qubit you can do:
+
+```d
+    import quantum.pure_state.qc;
+    import viz.bloch_sphere.pure_state.bloch_sphere;
+
+    void main() {
+        QuantumCircuit qc = QuantumCircuit(1);
+        qc.hadamard(0);
+        qc.s(0);
+        qc.pauli_z(0);
+
+        BlochSphere bs = BlochSphere(&qc);
+        bs.draw_bloch_sphere(0);
+    }
+```
+
+The filename of the generated file is `qubitX_bloch.pdf` where X is the qubit number you drew.
+
+The image generated is:
+
+![bloch sphere](assets/bloch_example.png)
 
 
 

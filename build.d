@@ -36,6 +36,8 @@ string[] library_files = [
     "algos/quantum_teleportation.d",
     "viz/visualization.d",
     "viz/bloch_sphere/pure_state/bloch_sphere.d",
+    "viz/bloch_sphere/impure_state/bloch_sphere.d",
+    "viz/bloch_sphere/lib.d",
     "qec/stabilizer.d",
     "qec/decoder.d",
     "qec/lib.d"
