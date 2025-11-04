@@ -107,6 +107,7 @@ to install the blochsphere package. See instructions below on how to test if the
 - `quantum machine learning`
 - `circuit visualizations`
 - `bloch sphere visualization`
+- `custom unitaries`
 
 ## Getting Started
 
