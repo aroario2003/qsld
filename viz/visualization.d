@@ -3,6 +3,7 @@ module viz.visualization;
 import std.stdio;
 import std.typecons;
 import std.algorithm.searching;
+import std.algorithm.sorting;
 import std.process;
 import std.format;
 import std.array;
@@ -29,6 +30,38 @@ struct Visualization {
         this.vis_arr = vis_arr;
         this.num_qubits = num_qubits;
         this.initial_state_idx = initial_state_idx;
+    }
+
+    private string[][] make_lines_equal_length(string[][] lines) {
+        for (int j = 0; j < lines.length; j++) {
+            for (int k = 1; k < lines.length; k++) {
+                if (j == k) {
+                    break;
+                }
+
+                if (lines[j].length - 1 < lines[k].length - 1) {
+                    while (lines[j].length - 1 < lines[k].length - 1) {
+                        lines[j][lines[j].length++] = " \\qw &";
+                    }
+                } else if (lines[k].length - 1 < lines[j].length - 1) {
+                    while (lines[k].length - 1 < lines[j].length - 1) {
+                        lines[k][lines[k].length++] = " \\qw &";
+                    }
+                }
+            }
+        }
+
+        return lines;
+    }
+
+    private string[][] pad_other_gates(int[] qubit_idxs, string[][] lines) {
+        foreach (k; 0 .. this.num_qubits) {
+            if (!qubit_idxs.canFind(k)) {
+                lines[k][lines[k].length++] = " \\qw &";
+            }
+        }
+
+        return lines;
     }
 
     /**
@@ -62,6 +95,50 @@ struct Visualization {
                 if (gate_name != "M" && gate_name != "MA") {
                     if (gate_name == "R_X" || gate_name == "R_Y" || gate_name == "R_Z") {
                         lines[qubit_idxs[0]][lines[qubit_idxs[0]].length++] = format(" \\gate{%s(\\theta)} &", gate_name);
+                    } else if (gate_name.startsWith("U")) {
+                        qubit_idxs.sort();
+
+                        int[] group = [qubit_idxs[0]];
+                        int[][] groups;
+                        if (qubit_idxs.length == 1) {
+                            groups ~= [qubit_idxs[0]];
+                        } else {
+                            for (int j = 1; j < qubit_idxs.length; j++) {
+                                if (qubit_idxs[j] == qubit_idxs[j - (cast(ulong) 1)] + 1) {
+                                    group ~= qubit_idxs[j];
+                                } else {
+                                    groups ~= group;
+                                    group = [qubit_idxs[j]];
+                                }
+                            }
+                            groups ~= group;
+                        }
+
+                        lines = make_lines_equal_length(lines);
+
+                        for (int j = 0; j < groups.length; j++) {
+                            if (j != groups.length - (cast(ulong) 1)) {
+                                if (groups[j].length > 1 && groups.length > 1) {
+
+                                    ulong group_offset = groups[j].length;
+
+                                    lines[groups[j][0]][lines[groups[j][0]].length++] = format(
+                                        " \\gate[%d]{%s} &", group_offset, gate_name);
+                                } else if (groups[j].length == 1 && groups.length > 1) {
+                                    lines[groups[j][0]][lines[groups[j][0]].length++] = format(
+                                        " \\gate{%s} &", gate_name);
+                                }
+                            } else {
+                                if (groups[j].length > 1) {
+                                    ulong group_offset = groups[j].length;
+
+                                    lines[groups[j][0]][lines[groups[j][0]].length++] = format(
+                                        " \\gate[%d]{%s} &", group_offset, gate_name);
+                                } else {
+                                    lines[groups[j][0]][lines[groups[j][0]].length++] = format(" \\gate{%s} &", gate_name);
+                                }
+                            }
+                        }
                     } else {
                         lines[qubit_idxs[0]][lines[qubit_idxs[0]].length++] = format(" \\gate{%s} &", gate_name);
                     }
@@ -75,30 +152,12 @@ struct Visualization {
                     }
                 }
             } else {
-                for (int j = 0; j < lines.length; j++) {
-                    for (int k = 1; k < lines.length; k++) {
-                        if (j == k) {
-                            break;
-                        }
+                lines = make_lines_equal_length(lines);
 
-                        if (lines[j].length - 1 < lines[k].length - 1) {
-                            while (lines[j].length - 1 < lines[k].length - 1) {
-                                lines[j][lines[j].length++] = " \\qw &";
-                            }
-                        } else if (lines[k].length - 1 < lines[j].length - 1) {
-                            while (lines[k].length - 1 < lines[j].length - 1) {
-                                lines[k][lines[k].length++] = " \\qw &";
-                            }
-                        }
-                    }
-                }
                 switch (gate_name) {
                 case "CX":
-                    foreach (k; 0 .. this.num_qubits) {
-                        if (!qubit_idxs.canFind(k)) {
-                            lines[k][lines[k].length++] = " \\qw &";
-                        }
-                    }
+                    lines = pad_other_gates(qubit_idxs, lines);
+
                     lines[qubit_idxs[0]][lines[qubit_idxs[0]].length++] = format(" \\ctrl{%d} &", qubit_idxs[1] - qubit_idxs[0]);
                     lines[qubit_idxs[1]][lines[qubit_idxs[1]].length++] = " \\targ{} &";
                     break;
@@ -109,29 +168,19 @@ struct Visualization {
                         lines[qubit_idxs[j]][lines[qubit_idxs[j]].length++] = format(" \\ctrl{%d} &", target_qubit - qubit_idxs[j]);
                     }
 
-                    foreach (k; 0 .. this.num_qubits) {
-                        if (!qubit_idxs.canFind(k)) {
-                            lines[k][lines[k].length++] = " \\qw &";
-                        }
-                    }
+                    lines = pad_other_gates(qubit_idxs, lines);
 
                     lines[target_qubit][lines[target_qubit].length++] = " \\targ{} &";
                     break;
                 case "SWAP":
-                    foreach (k; 0 .. this.num_qubits) {
-                        if (!qubit_idxs.canFind(k)) {
-                            lines[k][lines[k].length++] = " \\qw &";
-                        }
-                    }
+                    lines = pad_other_gates(qubit_idxs, lines);
+
                     lines[qubit_idxs[0]][lines[qubit_idxs[0]].length++] = format(" \\swap{%d} &", qubit_idxs[1] - qubit_idxs[0]);
                     lines[qubit_idxs[1]][lines[qubit_idxs[1]].length++] = " \\targX{} &";
                     break;
                 default:
-                    foreach (k; 0 .. this.num_qubits) {
-                        if (!qubit_idxs.canFind(k)) {
-                            lines[k][lines[k].length++] = " \\qw &";
-                        }
-                    }
+                    lines = pad_other_gates(qubit_idxs, lines);
+
                     lines[qubit_idxs[0]][lines[qubit_idxs[0]].length++] = format(" \\ctrl{%d} &", qubit_idxs[1] - qubit_idxs[0]);
                     lines[qubit_idxs[1]][lines[qubit_idxs[1]].length++] = format(" \\gate{%s} &", gate_name);
                 }
