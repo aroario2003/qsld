@@ -40,7 +40,9 @@ string[] library_files = [
     "viz/bloch_sphere/lib.d",
     "qec/stabilizer.d",
     "qec/decoder.d",
-    "qec/lib.d"
+    "qec/lib.d",
+    "topological/lib.d",
+    "topological/pure_state/tqc.d"
 ];
 
 void compile(string[] compile_cmd, bool library = true, string example_name = "") {

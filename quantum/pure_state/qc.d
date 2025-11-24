@@ -1160,25 +1160,20 @@ struct QuantumCircuit {
 
     // measurement of a single qubit internal logic, this function
     // exists solely to prevent code duplication
-    private string measure_internal(
-        int qubit_idx) {
+    private string measure_internal(int qubit_idx) {
         real probability_0 = 0;
         real probability_1 = 0;
 
         // sum probabilities of the qubit in each state
         for (int i = 0; i < this.state.length(); i++) {
-            bool qubit_is_zero = (
-                i & (1 << qubit_idx)) == 0;
-            bool qubit_is_one = (
-                i & (1 << qubit_idx)) != 0;
+            bool qubit_is_zero = (i & (1 << qubit_idx)) == 0;
+            bool qubit_is_one = (i & (1 << qubit_idx)) != 0;
 
             if (qubit_is_zero) {
-                real state_prob = norm(
-                    this.state[i]);
+                real state_prob = norm(this.state[i]);
                 probability_0 += state_prob;
             } else if (qubit_is_one) {
-                real state_prob = norm(
-                    this.state[i]);
+                real state_prob = norm(this.state[i]);
                 probability_1 += state_prob;
             }
         }
@@ -1237,8 +1232,7 @@ struct QuantumCircuit {
 
         int[string] counts;
         for (int i = 0; i < shots; i++) {
-            string result = measure_internal(
-                qubit_idx);
+            string result = measure_internal(qubit_idx);
             counts[result] += 1;
         }
         return counts;
@@ -1248,11 +1242,9 @@ struct QuantumCircuit {
     // to prevent code duplication
     private string measure_all_internal() {
         Vector!float probs = Vector!float(
-            cast(int) this.state.length(), new float[this
-                .state.length()]); // Take the magnitude of each complex probability amplitude
+            cast(int) this.state.length(), new float[this.state.length()]); // Take the magnitude of each complex probability amplitude
         foreach (i, c; this.state.elems) {
-            float magnitude = sqrt(pow(c.re, 2) + pow(
-                    c.im, 2));
+            float magnitude = sqrt(pow(c.re, 2) + pow(c.im, 2));
             float prob = pow(magnitude, 2);
             probs.elems[i] = prob;
         }
@@ -1266,8 +1258,7 @@ struct QuantumCircuit {
         foreach (i, elem; probs.elems) {
             sum += elem;
             if (r < sum) {
-                binary_result = format("%0*b", this
-                        .num_qubits, i);
+                binary_result = format("%0*b", this.num_qubits, i);
                 break;
             }
         }
