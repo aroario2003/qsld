@@ -16,6 +16,7 @@ struct Visualization {
     Tuple!(string, int[], int)[] vis_arr;
     int num_qubits;
     int initial_state_idx;
+    string[][] lines;
 
     /**
     * The constructor for the type that allows for drawing the circuit
@@ -30,38 +31,35 @@ struct Visualization {
         this.vis_arr = vis_arr;
         this.num_qubits = num_qubits;
         this.initial_state_idx = initial_state_idx;
+        this.lines = [];
     }
 
-    private string[][] make_lines_equal_length(string[][] lines) {
-        for (int j = 0; j < lines.length; j++) {
-            for (int k = 1; k < lines.length; k++) {
+    private void make_lines_equal_length() {
+        for (int j = 0; j < this.lines.length; j++) {
+            for (int k = 1; k < this.lines.length; k++) {
                 if (j == k) {
                     break;
                 }
 
-                if (lines[j].length - 1 < lines[k].length - 1) {
-                    while (lines[j].length - 1 < lines[k].length - 1) {
-                        lines[j][lines[j].length++] = " \\qw &";
+                if (this.lines[j].length - 1 < this.lines[k].length - 1) {
+                    while (this.lines[j].length - 1 < this.lines[k].length - 1) {
+                        this.lines[j][this.lines[j].length++] = " \\qw &";
                     }
-                } else if (lines[k].length - 1 < lines[j].length - 1) {
-                    while (lines[k].length - 1 < lines[j].length - 1) {
-                        lines[k][lines[k].length++] = " \\qw &";
+                } else if (this.lines[k].length - 1 < this.lines[j].length - 1) {
+                    while (this.lines[k].length - 1 < this.lines[j].length - 1) {
+                        this.lines[k][this.lines[k].length++] = " \\qw &";
                     }
                 }
             }
         }
-
-        return lines;
     }
 
-    private string[][] pad_other_gates(int[] qubit_idxs, string[][] lines) {
+    private void pad_other_gates(int[] qubit_idxs) {
         foreach (k; 0 .. this.num_qubits) {
             if (!qubit_idxs.canFind(k)) {
-                lines[k][lines[k].length++] = " \\qw &";
+                this.lines[k][this.lines[k].length++] = " \\qw &";
             }
         }
-
-        return lines;
     }
 
     /**
@@ -78,10 +76,9 @@ struct Visualization {
         append(filename, "\\scalebox{1.8} {%\n");
         append(filename, "\\begin{quantikz}\n");
 
-        string[][] lines = [];
         for (int i = 0; i < this.num_qubits; i++) {
             int qubit_val = this.initial_state_idx & (1 << i);
-            lines[lines.length++] = [
+            this.lines[lines.length++] = [
                 format("\\lstick{\\ket{%d}} &", (qubit_val >> i))
             ];
         }
@@ -94,7 +91,7 @@ struct Visualization {
             if (!gate_name.startsWith("C") && gate_name != "SWAP" && gate_name != "iSWAP" && gate_name != "TF") {
                 if (gate_name != "M" && gate_name != "MA") {
                     if (gate_name == "R_X" || gate_name == "R_Y" || gate_name == "R_Z") {
-                        lines[qubit_idxs[0]][lines[qubit_idxs[0]].length++] = format(" \\gate{%s(\\theta)} &", gate_name);
+                        this.lines[qubit_idxs[0]][this.lines[qubit_idxs[0]].length++] = format(" \\gate{%s(\\theta)} &", gate_name);
                     } else if (gate_name.startsWith("U")) {
                         qubit_idxs.sort();
 
@@ -114,7 +111,7 @@ struct Visualization {
                             groups ~= group;
                         }
 
-                        lines = make_lines_equal_length(lines);
+                        make_lines_equal_length();
 
                         for (int j = 0; j < groups.length; j++) {
                             if (j != groups.length - (cast(ulong) 1)) {
@@ -122,83 +119,89 @@ struct Visualization {
 
                                     ulong group_offset = groups[j].length;
 
-                                    lines[groups[j][0]][lines[groups[j][0]].length++] = format(
+                                    this.lines[groups[j][0]][this.lines[groups[j][0]].length++] = format(
                                         " \\gate[%d]{%s} &", group_offset, gate_name);
                                 } else if (groups[j].length == 1 && groups.length > 1) {
-                                    lines[groups[j][0]][lines[groups[j][0]].length++] = format(
+                                    this.lines[groups[j][0]][this.lines[groups[j][0]].length++] = format(
                                         " \\gate{%s} &", gate_name);
                                 }
                             } else {
                                 if (groups[j].length > 1) {
                                     ulong group_offset = groups[j].length;
 
-                                    lines[groups[j][0]][lines[groups[j][0]].length++] = format(
+                                    this.lines[groups[j][0]][this.lines[groups[j][0]].length++] = format(
                                         " \\gate[%d]{%s} &", group_offset, gate_name);
                                 } else {
-                                    lines[groups[j][0]][lines[groups[j][0]].length++] = format(" \\gate{%s} &", gate_name);
+                                    this.lines[groups[j][0]][this.lines[groups[j][0]].length++] = format(
+                                        " \\gate{%s} &", gate_name);
                                 }
                             }
                         }
+                    } else if (gate_name.startsWith("slice")) {
+                        string slice_tex = format(" \\%s &", gate_name);
+                        this.lines[0][this.lines[0].length++] = slice_tex;
                     } else {
-                        lines[qubit_idxs[0]][lines[qubit_idxs[0]].length++] = format(" \\gate{%s} &", gate_name);
+                        this.lines[qubit_idxs[0]][this.lines[qubit_idxs[0]].length++] = format(" \\gate{%s} &", gate_name);
                     }
                 } else {
                     if (gate_name == "M") {
-                        lines[qubit_idxs[0]][lines[qubit_idxs[0]].length++] = " \\meter{} &";
+                        this.lines[qubit_idxs[0]][this.lines[qubit_idxs[0]].length++] = " \\meter{} &";
                     } else if (gate_name == "MA") {
                         foreach (idx; qubit_idxs) {
-                            lines[qubit_idxs[idx]][lines[qubit_idxs[idx]].length++] = " \\meter{} &";
+                            this.lines[qubit_idxs[idx]][this.lines[qubit_idxs[idx]].length++] = " \\meter{} &";
                         }
                     }
                 }
             } else {
-                lines = make_lines_equal_length(lines);
+                make_lines_equal_length();
 
                 switch (gate_name) {
                 case "CX":
-                    lines = pad_other_gates(qubit_idxs, lines);
+                    pad_other_gates(qubit_idxs);
 
-                    lines[qubit_idxs[0]][lines[qubit_idxs[0]].length++] = format(" \\ctrl{%d} &", qubit_idxs[1] - qubit_idxs[0]);
-                    lines[qubit_idxs[1]][lines[qubit_idxs[1]].length++] = " \\targ{} &";
+                    this.lines[qubit_idxs[0]][this.lines[qubit_idxs[0]].length++] = format(" \\ctrl{%d} &", qubit_idxs[1] - qubit_idxs[0]);
+                    this.lines[qubit_idxs[1]][this.lines[qubit_idxs[1]].length++] = " \\targ{} &";
                     break;
                 case "TF":
                     int target_qubit = qubit_idxs[qubit_idxs.length - 1];
 
                     for (int j = 0; j < qubit_idxs.length - 1; j++) {
-                        lines[qubit_idxs[j]][lines[qubit_idxs[j]].length++] = format(" \\ctrl{%d} &", target_qubit - qubit_idxs[j]);
+                        this.lines[qubit_idxs[j]][this.lines[qubit_idxs[j]].length++] = format(" \\ctrl{%d} &", target_qubit - qubit_idxs[j]);
                     }
 
-                    lines = pad_other_gates(qubit_idxs, lines);
+                    pad_other_gates(qubit_idxs);
 
-                    lines[target_qubit][lines[target_qubit].length++] = " \\targ{} &";
+                    this.lines[target_qubit][this.lines[target_qubit].length++] = " \\targ{} &";
                     break;
                 case "SWAP":
-                    lines = pad_other_gates(qubit_idxs, lines);
+                    pad_other_gates(qubit_idxs);
 
-                    lines[qubit_idxs[0]][lines[qubit_idxs[0]].length++] = format(" \\swap{%d} &", qubit_idxs[1] - qubit_idxs[0]);
-                    lines[qubit_idxs[1]][lines[qubit_idxs[1]].length++] = " \\targX{} &";
+                    this.lines[qubit_idxs[0]][this.lines[qubit_idxs[0]].length++] = format(" \\swap{%d} &", qubit_idxs[1] - qubit_idxs[0]);
+                    this.lines[qubit_idxs[1]][this.lines[qubit_idxs[1]].length++] = " \\targX{} &";
                     break;
                 default:
-                    lines = pad_other_gates(qubit_idxs, lines);
+                    pad_other_gates(qubit_idxs);
 
-                    lines[qubit_idxs[0]][lines[qubit_idxs[0]].length++] = format(" \\ctrl{%d} &", qubit_idxs[1] - qubit_idxs[0]);
-                    lines[qubit_idxs[1]][lines[qubit_idxs[1]].length++] = format(" \\gate{%s} &", gate_name);
+                    this.lines[qubit_idxs[0]][this.lines[qubit_idxs[0]].length++] = format(" \\ctrl{%d} &", qubit_idxs[1] - qubit_idxs[0]);
+                    this.lines[qubit_idxs[1]][this.lines[qubit_idxs[1]].length++] = format(" \\gate{%s} &", gate_name);
                 }
             }
         }
 
         ulong max_len = 0;
-        foreach (line; lines) {
+        foreach (line; this.lines) {
             if (line.length > max_len)
                 max_len = line.length;
         }
 
-        foreach (line; lines) {
+        foreach (idx, line; this.lines) {
             while (line.length < max_len) {
                 line[line.length++] = " \\qw &";
             }
 
-            line[line.length++] = " \\qw \\\\\n";
+            if (idx != lines.length - cast(ulong) 1) {
+                line[line.length++] = " \\qw \\\\\n";
+            }
             string full_line = line.join();
             append(filename, full_line);
         }

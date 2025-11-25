@@ -48,6 +48,7 @@ struct QuantumCircuit {
     // These are for circuit visualization
     int timestep;
     Tuple!(string, int[], int)[] visualization_arr;
+    Visualization vis;
 
     // This is for decoherence with T1/T2 decay
     DecoherenceConfig decoherence_conf;
@@ -1306,6 +1307,23 @@ struct QuantumCircuit {
     }
 
     /**
+     * Labels the state at a given timestep based on the current state of the 
+     * visualization array maintained internally by the QuantumCircuit object
+     *
+     * params:
+     * label = The latex string to put as the current state of the system at the given
+     *         timestep
+     *
+     * options = A comma seperated list of ptions which can be given to the corresponding 
+     *           latex command in Quantikz. For more information refer to 
+     *           https://ftp.riken.jp/tex-archive/graphics/pgf/contrib/quantikz/quantikz.pdf
+     *           the \slice command specifically
+     */
+    void slice(string label, string options = "style=black") {
+        update_visualization_arr(format("slice[%s]{%s}", options, label), []);
+    }
+
+    /**
     * Draws the circuit which the user created with latex
     *
     * params:
@@ -1314,11 +1332,11 @@ struct QuantumCircuit {
     * filename = The name of the file to write the latex to and to compile (default: circuit.tex)
     */
     void draw(string compiler = "pdflatex", string filename = "circuit.tex") {
-        Visualization vis = Visualization(this.visualization_arr, this.num_qubits, this
+        this.vis = Visualization(this.visualization_arr, this.num_qubits, this
                 .initial_state_idx);
 
-        vis.parse_and_write_vis_arr(filename);
-        vis.compile_tex_and_cleanup(compiler, filename);
+        this.vis.parse_and_write_vis_arr(filename);
+        this.vis.compile_tex_and_cleanup(compiler, filename);
     }
 
     // Approximate the relative phase given as a 
