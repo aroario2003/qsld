@@ -54,7 +54,6 @@ void compile(string[] compile_cmd, bool library = true, string example_name = ""
             writeln("Compilation of example with name ", example_name, " failed");
         }
         exit(1);
-
     }
 }
 
@@ -81,7 +80,6 @@ void remove_o_files() {
             remove(entry.name);
         }
     }
-
 }
 
 void main(string[] args) {
@@ -89,11 +87,12 @@ void main(string[] args) {
         "c|compiler", "specify the compiler to use (default: dmd)", &compiler,
         "e|example", "specify an example or examples to build", &examples,
         "f|force", "force recompile", &force,
-        "d|delete", "cleanup any binary, object and library files in the root of the project or examples/", &cleanup
+        "d|delete", "cleanup any binary, object and library files in the root of the project or examples/", &cleanup,
     );
 
     if (help_info.helpWanted) {
         defaultGetoptPrinter("QSLD build script", help_info.options);
+        exit(0);
     }
 
     if (cleanup) {
